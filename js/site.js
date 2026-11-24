@@ -45,8 +45,13 @@
   var replay = document.getElementById('replay');
   if (replay) replay.addEventListener('click', function (e) {
     e.preventDefault();
-    history.replaceState(null, '', location.pathname);
-    location.reload();
+    var home = replay.getAttribute('href') || 'index.html';
+    if (/(^|\/)(index\.html)?$/.test(location.pathname) && home === 'index.html') {
+      history.replaceState(null, '', location.pathname);
+      location.reload();
+    } else {
+      location.href = home;
+    }
   });
 
   var nav = document.querySelector('.nav');
