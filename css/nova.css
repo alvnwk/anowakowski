@@ -143,7 +143,8 @@ body::after {
   transition: width 0.35s var(--ease), height 0.35s var(--ease), margin 0.35s var(--ease), opacity 0.35s;
 }
 .cursor.is-hot .cursor-ring, .eye-hover .cursor-ring { width: 72px; height: 72px; margin: -36px 0 0 -36px; opacity: 1; }
-.intro-entering .cursor { opacity: 0; }
+.has-cursor .cursor { transition: opacity 0.6s ease; }
+.intro-entering:not(.intro-out) .cursor { opacity: 0; }
 
 /* ================================================================= NAV */
 .nav {
