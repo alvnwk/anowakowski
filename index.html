@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Nova Corporate — Holding company</title>
+  <meta name="description" content="Nova Corporate is the holding company behind Auralys and the European Student Council for Law and Diplomacy, with more ventures to come.">
+  <meta name="theme-color" content="#0e0e0e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Nova Corporate">
+  <meta property="og:description" content="We see the future. Then we build it.">
+  <meta property="og:image" content="img/nova-logo.png">
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/nova-logo.png">
+  <link rel="stylesheet" href="css/nova.css">
+  <script>
+    // Intro runs on arrival; a deep link (#ventures, ?skip) goes straight to the site.
+    (function () {
+      var r = document.documentElement;
+      r.classList.add('js');
+      if (location.hash.length > 1 || /[?&]skip\b/.test(location.search)) r.classList.add('is-site', 'no-intro');
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- ================================================================ INTRO -->
+  <section id="intro" class="intro" aria-label="Nova — introduction">
+    <canvas id="eye" class="intro-eye" aria-hidden="true"></canvas>
+    <div class="intro-fx" aria-hidden="true"></div>
+    <p id="subtitle" class="subtitle" aria-live="polite"></p>
+    <button id="enter-btn" class="sr-only" type="button">Begin</button>
+    <audio id="voice-intro" src="audio/intro.mp3" preload="auto"></audio>
+    <audio id="voice-enter" src="audio/enter.mp3" preload="auto"></audio>
+  </section>
+
+  <div class="cursor" aria-hidden="true"><span class="cursor-dot"></span><span class="cursor-ring"></span></div>
+
+  <!-- ================================================================= SITE -->
+  <div id="site" class="site">
+    <a class="sr-only sr-focusable" href="#ventures">Skip to ventures</a>
+
+    <header class="nav">
+      <a class="nav-brand" href="#top" aria-label="Nova Corporate — home">
+        <svg class="nav-mark" viewBox="-196 0 392 281" aria-hidden="true"><path d="M0 0 196 196 111 281 0 170-111 281-196 196Z"/></svg>
+        <span>Nova&nbsp;Corporate</span>
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a href="#ventures" data-scramble>Ventures</a>
+        <a href="#approach" data-scramble>Approach</a>
+        <a href="#next" data-scramble>Next</a>
+        <a href="#contact" data-scramble>Contact</a>
+      </nav>
+      <p class="nav-clock mono" aria-hidden="true"><span class="pulse"></span><span id="clock">--:--:--</span></p>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section class="hero" id="top">
+        <div class="hero-grid" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <canvas class="hero-mark" id="mark" aria-hidden="true"></canvas>
+        <p class="hero-kicker mono reveal"><span>(00)</span> Holding company</p>
+        <h1 class="hero-title">
+          <span class="line"><span>Nova</span></span>
+          <span class="line"><span>Corporate</span></span>
+        </h1>
+        <div class="hero-foot">
+          <p class="hero-lede reveal">A holding company for independent ventures, built to see what comes next and to build it.</p>
+          <dl class="hero-stats reveal">
+            <div><dt class="mono">Ventures</dt><dd>02</dd></div>
+            <div><dt class="mono">Fields</dt><dd>Music, Law, Diplomacy</dd></div>
+            <div><dt class="mono">Next</dt><dd>In motion</dd></div>
+          </dl>
+          <a class="hero-scroll mono reveal" href="#vision"><span>Scroll</span><i aria-hidden="true"></i></a>
+        </div>
+      </section>
+
+      <!-- VISION -->
+      <section class="vision" id="vision">
+        <p class="label mono reveal"><span>(01)</span> Vision</p>
+        <p class="vision-text" data-words>We see the future. Then we build it, one venture at a time. Each with its own voice. All held by the same vision.</p>
+      </section>
+
+      <!-- VENTURES -->
+      <section class="ventures" id="ventures">
+        <header class="section-head">
+          <p class="label mono reveal"><span>(02)</span> Ventures</p>
+          <h2 class="h2"><span class="line"><span>Portfolio</span></span></h2>
+          <p class="section-note mono reveal">02 live / more to come</p>
+        </header>
+
+        <ol class="vlist">
+          <li class="v reveal">
+            <a class="v-link" href="https://blog.auralys.app" target="_blank" rel="noopener">
+              <span class="v-idx mono">01</span>
+              <span class="v-name">Auralys</span>
+              <span class="v-tags mono">Music / Social</span>
+              <span class="v-body">
+                <span class="v-desc">The music social network to discover, rate, rank and share the tracks you love with your friends.</span>
+                <span class="v-feat mono">Reviews · Top Auralys · Quests</span>
+              </span>
+              <span class="v-go mono">blog.auralys.app <b aria-hidden="true">↗</b></span>
+            </a>
+          </li>
+          <li class="v reveal">
+            <a class="v-link" href="https://escld.eu" target="_blank" rel="noopener">
+              <span class="v-idx mono">02</span>
+              <span class="v-name">ESCLD</span>
+              <span class="v-tags mono">Law / Diplomacy / Europe</span>
+              <span class="v-body">
+                <span class="v-desc">The European Student Council for Law and Diplomacy. An independent, student-led initiative for dialogue on law, diplomacy, international relations and European affairs.</span>
+                <span class="v-feat mono">Law &amp; Institutions · Diplomacy &amp; IR · Europe &amp; Fundamental Rights</span>
+              </span>
+              <span class="v-go mono">escld.eu <b aria-hidden="true">↗</b></span>
+            </a>
+          </li>
+          <li class="v v--locked reveal">
+            <div class="v-link" aria-label="Venture 03, in development">
+              <span class="v-idx mono">03</span>
+              <span class="v-name"><span class="redact" data-redact="CLASSIFIED">CLASSIFIED</span></span>
+              <span class="v-tags mono">Stealth</span>
+              <span class="v-body">
+                <span class="v-desc">In development. Revealed when it is ready.</span>
+                <span class="v-feat mono"><span class="pulse"></span> Status: incubating</span>
+              </span>
+              <span class="v-go mono">Soon</span>
+            </div>
+          </li>
+          <li class="v v--open reveal">
+            <a class="v-link" href="#next">
+              <span class="v-idx mono">04</span>
+              <span class="v-name">Yours?</span>
+              <span class="v-tags mono">Open slot</span>
+              <span class="v-body">
+                <span class="v-desc">Nova is open to new ventures, partners and ideas. The next one could start with a conversation.</span>
+                <span class="v-feat mono">Ventures · Partnerships · Ideas</span>
+              </span>
+              <span class="v-go mono">Talk to us <b aria-hidden="true">→</b></span>
+            </a>
+          </li>
+        </ol>
+      </section>
+
+      <!-- MARQUEE -->
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee-track">
+          <span>Music</span><i></i><span>Social</span><i></i><span>Law</span><i></i><span>Diplomacy</span><i></i><span>Europe</span><i></i><span>Culture</span><i></i><span>Technology</span><i></i><span>What’s next</span><i></i>
+        </div>
+      </div>
+
+      <!-- APPROACH -->
+      <section class="approach" id="approach">
+        <header class="section-head">
+          <p class="label mono reveal"><span>(03)</span> Approach</p>
+          <h2 class="h2"><span class="line"><span>See. Build. Hold.</span></span></h2>
+        </header>
+        <div class="steps">
+          <article class="step reveal">
+            <p class="step-n mono">01</p>
+            <h3>See</h3>
+            <p>We look for the signals before they become trends: in culture, in technology, in institutions.</p>
+          </article>
+          <article class="step reveal">
+            <p class="step-n mono">02</p>
+            <h3>Build</h3>
+            <p>Each venture launches with its own identity, its own community and the freedom to grow at its own pace.</p>
+          </article>
+          <article class="step reveal">
+            <p class="step-n mono">03</p>
+            <h3>Hold</h3>
+            <p>Nova provides the long-term frame: strategy, design, technology and governance, shared across every project.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- NEXT -->
+      <section class="next" id="next">
+        <p class="label mono reveal"><span>(04)</span> What’s next</p>
+        <h2 class="mega">
+          <span class="line"><span>The door</span></span>
+          <span class="line"><span>is open.</span></span>
+        </h2>
+        <div class="next-row">
+          <p class="next-text reveal">Nova is built to expand. New ventures, new fields, new partners. Nothing is ruled out.</p>
+          <a class="btn reveal" href="mailto:contact@novacorporate.com"><span>Start a conversation</span><b aria-hidden="true">→</b></a>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer" id="contact">
+      <div class="footer-top">
+        <a class="footer-brand" href="#top" aria-label="Back to top">
+          <svg viewBox="-196 0 392 281" aria-hidden="true"><path d="M0 0 196 196 111 281 0 170-111 281-196 196Z"/></svg>
+        </a>
+        <div class="footer-col">
+          <p class="mono">Ventures</p>
+          <a href="https://blog.auralys.app" target="_blank" rel="noopener">Auralys</a>
+          <a href="https://escld.eu" target="_blank" rel="noopener">ESCLD</a>
+        </div>
+        <div class="footer-col">
+          <p class="mono">Company</p>
+          <a href="#approach">Approach</a>
+          <a href="#next">What’s next</a>
+        </div>
+        <div class="footer-col">
+          <p class="mono">Contact</p>
+          <a href="mailto:contact@novacorporate.com">contact@novacorporate.com</a>
+        </div>
+      </div>
+      <p class="footer-word" aria-hidden="true">NOVA</p>
+      <div class="footer-bottom mono">
+        <span>© <span id="year">2026</span> Nova Corporate</span>
+        <a href="./" id="replay">Replay intro ↺</a>
+        <a href="#top">Back to top ↑</a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="js/site.js"></script>
+  <script src="js/eye.js"></script>
+</body>
+</html>
