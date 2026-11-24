@@ -260,6 +260,23 @@ body::after {
 .h2 { font-size: clamp(48px, 8.4vw, 140px); font-weight: 700; line-height: 0.86; letter-spacing: -0.05em; text-transform: uppercase; }
 .section-note { justify-self: end; color: var(--mute); margin-bottom: 0.6em; }
 
+/* ========================================================= PAGE HEAD */
+.page-head { padding: 160px var(--pad) 10vh; }
+.page-head .label a { color: var(--mute); }
+.page-head .label a:hover { color: var(--fg); }
+.page-head .label span { margin: 0 8px; }
+.page-title { font-size: clamp(56px, 15vw, 260px); font-weight: 700; line-height: 0.83; letter-spacing: -0.06em; text-transform: uppercase; margin-left: -0.05em; }
+.is-site .page-head .line > span { transform: none; }
+.page-head-foot {
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; flex-wrap: wrap;
+  margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--line);
+}
+.is-site .page-head .reveal { opacity: 1; transform: none; transition-delay: 0.35s; }
+.page-ventures .ventures { padding-bottom: 14vh; }
+.vision-cta { margin-top: 56px; }
+.u { border-bottom: 1px solid currentColor; }
+.nav-links a[aria-current="page"]::after { transform: scaleX(1); }
+
 /* ============================================================ VENTURES */
 .ventures { padding-bottom: 18vh; }
 .vlist { list-style: none; border-top: 1px solid var(--line); }
