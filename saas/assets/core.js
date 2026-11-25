@@ -157,6 +157,14 @@
     async addMember(row) { const c = await sb(); return must(await c.from('members').insert(row).select().single()); },
     async updateMember(email, patch) { const c = await sb(); return must(await c.from('members').update(patch).eq('email', email).select().single()); },
     async removeMember(email) { const c = await sb(); must(await c.from('members').delete().eq('email', email)); },
+    /* Activity log (admins only — enforced by the database). */
+    async listLogs(before, limit) {
+      const c = await sb();
+      let q = c.from('activity_log').select('*').order('at', { ascending: false }).order('id', { ascending: false }).limit(limit || 300);
+      if (before) q = q.lt('at', before);
+      return must(await q);
+    },
+    async logOpen(project, kind, target) { try { const c = await sb(); await c.rpc('log_open', { p_project: project, p_kind: kind, p_target: String(target || '').slice(0, 300) }); } catch (e) { /* the log is optional */ } },
   };
 
   /* ====================================================== data: local demo */
@@ -178,6 +186,14 @@
   const demoCan = (p) => canAccess(demoMe(), p);
   const deny = () => { throw new Error('new row violates row-level security policy'); };
   const demoAdmin = () => { const m = demoMe(); if (!(m && m.active && m.is_admin)) deny(); };
+  /* Mirrors what the database triggers of logs.sql record online. */
+  function demoLog(action, project, kind, target, details) {
+    const s = demoState();
+    s.logs = s.logs || [];
+    s.logs.push({ id: s.logs.length + 1, at: new Date().toISOString(), actor: s.session, action, project: project || null, kind: kind || null, target: target ? String(target).slice(0, 300) : null, details: details || {} });
+  }
+  const itemLabel = (d) => d.title || d.name || d.label || d.metric || String(d.content || '').split('\n')[0] || '';
+  const entryDetails = (kind, d) => (kind === 'entry' ? { amount: d.amount, type: d.type } : {});
   const fileToDataUrl = (file) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
 
   const demo = {
@@ -202,18 +218,27 @@
     async setPassword() { await sleep(300); },
     onRecovery() {},
     async me() { const m = demoMe(); return m ? clone(m) : null; },
-    async touch() { const m = demoMe(); if (m) { m.last_seen = new Date().toISOString(); demoSave(); } },
+    async touch() {
+      const m = demoMe();
+      if (!m || !m.active) return;
+      if (!m.last_seen || Date.now() - new Date(m.last_seen).getTime() > 30 * 60000) demoLog('sign_in');
+      m.last_seen = new Date().toISOString(); demoSave();
+    },
     async listItems(project) { await sleep(150); return demoCan(project) ? clone(demoState().items.filter((i) => i.project === project)) : []; },
     async createItem(project, kind, data) {
       if (!demoCan(project)) deny();
       const now = new Date().toISOString();
       const row = { id: uid(), project, kind, data, created_by: demoState().session, created_at: now, updated_at: now };
-      demoState().items.push(row); demoSave();
+      demoState().items.push(row);
+      demoLog('create', project, kind, itemLabel(data), entryDetails(kind, data)); demoSave();
       return clone(row);
     },
     async updateItem(id, data) {
       const it = demoState().items.find((i) => i.id === id);
       if (!it || !demoCan(it.project)) deny();
+      const keys = [...new Set(Object.keys(data).concat(Object.keys(it.data)))];
+      const changed = keys.filter((k) => JSON.stringify(data[k]) !== JSON.stringify(it.data[k])).sort();
+      if (changed.length) demoLog('update', it.project, it.kind, itemLabel(data), Object.assign({ changed }, entryDetails(it.kind, data)));
       it.data = data; it.updated_at = new Date().toISOString(); demoSave();
       return clone(it);
     },
@@ -221,7 +246,8 @@
       const s = demoState();
       const it = s.items.find((i) => i.id === id);
       if (!it || !demoCan(it.project)) deny();
-      s.items = s.items.filter((i) => i.id !== id); demoSave();
+      s.items = s.items.filter((i) => i.id !== id);
+      demoLog('delete', it.project, it.kind, itemLabel(it.data), entryDetails(it.kind, it.data)); demoSave();
     },
     async upload(project, kind, file) {
       if (!demoCan(project)) deny();
@@ -242,11 +268,37 @@
       demoAdmin();
       if (demoMember(row.email)) throw new Error('This address is already on the list.');
       const m = Object.assign({ full_name: '', is_admin: false, projects: [], active: true, created_at: new Date().toISOString(), last_seen: null }, row);
-      demoState().members.push(m); demoSave();
+      demoState().members.push(m);
+      demoLog('access_add', null, 'member', m.email, { name: m.full_name, projects: m.projects, is_admin: m.is_admin }); demoSave();
       return clone(m);
     },
-    async updateMember(email, patch) { demoAdmin(); const m = demoMember(email); if (!m) deny(); Object.assign(m, patch); demoSave(); return clone(m); },
-    async removeMember(email) { demoAdmin(); const s = demoState(); s.members = s.members.filter((m) => m.email !== email); demoSave(); },
+    async updateMember(email, patch) {
+      demoAdmin();
+      const m = demoMember(email);
+      if (!m) deny();
+      const before = clone(m);
+      Object.assign(m, patch);
+      demoLog('access_change', null, 'member', m.email, {
+        name: m.full_name, name_before: before.full_name, projects_before: before.projects, projects_after: m.projects,
+        admin_before: before.is_admin, admin_after: m.is_admin, active_before: before.active, active_after: m.active,
+      });
+      demoSave();
+      return clone(m);
+    },
+    async removeMember(email) {
+      demoAdmin();
+      const s = demoState();
+      const m = demoMember(email);
+      s.members = s.members.filter((x) => x.email !== email);
+      if (m) demoLog('access_remove', null, 'member', m.email, { name: m.full_name });
+      demoSave();
+    },
+    async listLogs(before, limit) {
+      demoAdmin();
+      const all = (demoState().logs || []).slice().sort((a, b) => b.at.localeCompare(a.at) || b.id - a.id);
+      return clone(all.filter((l) => !before || l.at < before).slice(0, limit || 300));
+    },
+    async logOpen(project, kind, target) { if (demoCan(project)) { demoLog('open_file', project, kind, target); demoSave(); } },
   };
 
   /* Sample data, for the local demo only. */
@@ -631,7 +683,7 @@
           <div class="menu" hidden>
             <div class="menu-head"><b>${esc(me.full_name || '—')}</b><span>${esc(me.email)}</span></div>
             <a href="/saas/">${icon('home')}Home</a>
-            ${me.is_admin ? `<a href="/saas/admin/">${icon('shield')}Manage access</a>` : ''}
+            ${me.is_admin ? `<a href="/saas/admin/">${icon('shield')}Manage access</a><a href="/saas/logs/">${icon('list')}Activity log</a>` : ''}
             <button type="button" data-action="password">${icon('key')}Change my password</button>
             <hr>
             <button type="button" data-action="logout">${icon('logout')}Sign out</button>
@@ -688,7 +740,7 @@
     const msg = {
       closed: ['Access closed', 'Your access to the workspace has been closed or has not been opened yet. Contact an administrator if you think this is a mistake.'],
       project: ['Workspace not available', `You do not have access to the ${project && PROJECTS[project] ? PROJECTS[project].name : ''} workspace. An administrator can open it for you.`],
-      admin: ['Administrators only', 'This page is used to manage access. It is reserved for administrators.'],
+      admin: ['Administrators only', 'This page is reserved for administrators.'],
     }[kind];
     document.body.dataset.project = 'nova';
     const app = screen(`

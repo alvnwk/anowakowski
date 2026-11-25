@@ -685,6 +685,25 @@ dialog.modal.is-closing .modal-box { opacity: 0; transform: translateY(6px) scal
 .invite { white-space: pre-wrap; font-size: 13px; line-height: 1.55; padding: 14px 16px; border-radius: 12px; background: var(--accent-soft); color: var(--ink-2); font-family: var(--sans); }
 tr.is-off td:not(:last-child) { opacity: 0.55; }
 
+/* ----------------------------------------------------------- activity log */
+.log-day { color: var(--mute); margin: 22px 4px 6px; }
+.log-day:first-child { margin-top: 4px; }
+.log-row { display: grid; grid-template-columns: 46px 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 4px; border-top: 1px solid var(--line); }
+.log-list .log-row:first-child { border-top: 0; }
+.log-time { font-family: var(--mono); font-size: 11.5px; color: var(--mute); }
+.log-ico { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--raised); box-shadow: var(--sh-raised); color: var(--ink-2); }
+.log-ico .i { width: 15px; height: 15px; }
+.log-ico.danger { color: var(--danger); }
+.log-text { font-size: 13.5px; color: var(--ink-2); min-width: 0; overflow-wrap: anywhere; }
+.log-text b { color: var(--ink); font-weight: 600; }
+.log-text small { display: block; color: var(--mute); font-size: 12px; margin-top: 2px; }
+.log-more { display: flex; justify-content: center; padding-top: 18px; }
+@media (max-width: 640px) {
+  .log-row { grid-template-columns: 42px minmax(0, 1fr); row-gap: 6px; }
+  .log-ico { display: none; }
+  .log-row > .badge, .log-row > span:last-child { grid-column: 2; justify-self: start; }
+}
+
 /* ============================================================== responsive */
 @media (max-width: 1180px) {
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }

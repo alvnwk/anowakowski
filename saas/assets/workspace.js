@@ -851,7 +851,7 @@
       if (b.dataset.act === 'add') editDoc(kind);
       if (b.dataset.act === 'edit' && d) editDoc(kind, d);
       if (b.dataset.act === 'del' && d) askDelete(d.id, 'this document');
-      if (b.dataset.act === 'open' && d) { d.file ? N.openFile(d.file.path) : N.openLink(d.link); }
+      if (b.dataset.act === 'open' && d) { N.api.logOpen(PID, kind, d.title); d.file ? N.openFile(d.file.path) : N.openLink(d.link); }
     };
   }
 
@@ -970,7 +970,7 @@
       if (b.dataset.act === 'add') editEntry();
       if (b.dataset.act === 'edit' && it) editEntry(it);
       if (b.dataset.act === 'del' && it) askDelete(it.id, 'this transaction');
-      if (b.dataset.act === 'file' && it && it.file) N.openFile(it.file.path);
+      if (b.dataset.act === 'file' && it && it.file) { N.api.logOpen(PID, 'entry', `Receipt — ${it.label}`); N.openFile(it.file.path); }
       if (b.dataset.act === 'csv') N.download(`${PID}-accounting-${today()}.csv`, N.csv(all.slice().sort((a, c) => String(a.date).localeCompare(String(c.date))), [
         { label: 'Date', key: 'date' }, { label: 'Type', get: (r) => (r.type === 'in' ? 'Income' : 'Expense') }, { label: 'Description', key: 'label' },
         { label: 'Category', key: 'category' }, { label: 'Payment method', key: 'method' },

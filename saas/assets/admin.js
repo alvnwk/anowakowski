@@ -22,7 +22,7 @@
             <h1 class="page-title">Manage access</h1>
             <p class="page-sub">Open or close each person's access, workspace by workspace. Changes apply immediately.</p>
           </div>
-          <div class="page-actions"><button class="btn btn-primary" type="button" data-act="add">${icon('user-plus')}Add a person</button></div>
+          <div class="page-actions"><a class="btn" href="/saas/logs/">${icon('list')}Activity log</a><button class="btn btn-primary" type="button" data-act="add">${icon('user-plus')}Add a person</button></div>
         </div>
         <div class="stack">
           <section class="card pad">

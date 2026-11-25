@@ -156,6 +156,7 @@
           <h2 class="section-label mono">Administration</h2>
           <div class="home-tools">
             <a class="card tool" href="/saas/admin/"><span class="tool-ico">${icon('shield')}</span><span><b>Manage access</b><small>Open or close each member's access, workspace by workspace</small></span>${icon('arrow-right')}</a>
+            <a class="card tool" href="/saas/logs/"><span class="tool-ico">${icon('list')}</span><span><b>Activity log</b><small>Who signed in, what was added, edited or deleted, and access changes</small></span>${icon('arrow-right')}</a>
           </div>` : ''}
       </main>`;
     N.bindTopbar(app);
