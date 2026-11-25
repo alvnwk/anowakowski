@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Nova — espace privé · styles
-   Fond doux, cartes claires, une couleur par espace projet.
+   Nova — private workspace · styles
+   Soft background, light cards, one colour per project workspace.
    ========================================================================== */
 
 :root {
@@ -41,7 +41,7 @@
   color-scheme: light;
 }
 
-/* -------------------------------------------------------- couleurs d'espace */
+/* ---------------------------------------------------- workspace colours */
 body[data-project="auralys"] {
   --bg: #e6e1f3;
   --glow-a: rgba(146, 108, 236, 0.42);
@@ -104,12 +104,12 @@ img, svg { display: block; }
 .sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .num { font-variant-numeric: tabular-nums; }
 
-/* ------------------------------------------------------------- chargement */
+/* ---------------------------------------------------------------- loading */
 .boot { min-height: 100vh; display: grid; place-items: center; }
 .spinner { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--ink); animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---------------------------------------------------------------- boutons */
+/* ---------------------------------------------------------------- buttons */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 38px; padding: 0 16px; border-radius: 999px;
@@ -154,7 +154,7 @@ img, svg { display: block; }
 .badge--demo { background: #fff3c4; color: #7a5a00; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
 .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--c, var(--ink)); flex: none; }
 
-/* --------------------------------------------------------------- barre haute */
+/* ------------------------------------------------------------------ top bar */
 .topbar {
   position: sticky; top: 0; z-index: 40;
   display: flex; align-items: center; gap: 14px;
@@ -212,7 +212,7 @@ img, svg { display: block; }
   -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
 }
 
-/* barre latérale */
+/* sidebar */
 .side { position: sticky; top: 76px; display: flex; flex-direction: column; padding: 14px; max-height: calc(100vh - 92px); overflow: auto; }
 .side-head { display: flex; align-items: center; gap: 12px; padding: 4px 6px 16px; }
 .side-head b { display: block; font-family: var(--display); font-size: 16px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; }
@@ -237,7 +237,7 @@ body[data-project="escld"] .pbadge { color: #f0e3c6; }
 .side-count:empty { display: none; }
 .side-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); margin-top: 18px; }
 
-/* zone principale */
+/* main area */
 .main { min-width: 0; outline: none; }
 .crumb { color: var(--mute); margin: 6px 0 6px; }
 .crumb span { opacity: 0.5; margin: 0 4px; }
@@ -289,7 +289,7 @@ body[data-project="escld"] .page-title { letter-spacing: -0.01em; }
 .alert p { flex: 1; min-width: 200px; font-size: 13.5px; color: var(--ink-2); }
 .alert b { color: var(--ink); }
 
-/* graphique à points */
+/* dot chart */
 .dots { width: 100%; height: auto; overflow: visible; }
 .dots .d-in { fill: var(--ink); }
 .dots .d-out { fill: none; stroke: var(--ink); stroke-width: 1.3; opacity: 0.75; }
@@ -308,7 +308,7 @@ body[data-project="escld"] .page-title { letter-spacing: -0.01em; }
 .spark circle { fill: var(--surface-solid, #fff); stroke: var(--accent); stroke-width: 1.4; }
 .spark circle.last { fill: var(--accent); }
 
-/* -------------------------------------------------------------- listes */
+/* ---------------------------------------------------------------- lists */
 .rows { display: grid; }
 .row {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center;
@@ -351,7 +351,7 @@ a.mini:hover { background: rgba(255, 255, 255, 0.85); }
 .mini b { font-weight: 500; font-size: 14px; }
 .mini small { color: var(--mute); font-size: 12.5px; }
 
-/* --------------------------------------------------------------- outils */
+/* ---------------------------------------------------------------- tools */
 .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .search {
   position: relative; flex: 1 1 240px; max-width: 360px;
@@ -378,7 +378,7 @@ body[data-project] .chip[aria-pressed="true"] { background: var(--accent); }
 .seg button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: var(--sh-raised); }
 .seg button em { font-style: normal; font-family: var(--mono); font-size: 10.5px; color: var(--mute); }
 
-/* -------------------------------------------------------------- tableaux */
+/* ---------------------------------------------------------------- tables */
 .table-wrap { overflow-x: auto; margin: 0 -6px; padding: 0 6px; }
 .table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .table th {
@@ -397,7 +397,7 @@ body[data-project] .chip[aria-pressed="true"] { background: var(--accent); }
 .amount { font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
 .amount.in { color: var(--ok); }
 
-/* ---------------------------------------------------------- état vide */
+/* ---------------------------------------------------------- empty state */
 .empty { display: grid; justify-items: center; text-align: center; gap: 6px; padding: clamp(32px, 6vw, 64px) 20px; color: var(--mute); }
 .empty > .i { width: 26px; height: 26px; color: var(--faint); margin-bottom: 6px; }
 .empty b { color: var(--ink); font-size: 15px; font-weight: 600; }
@@ -405,7 +405,7 @@ body[data-project] .chip[aria-pressed="true"] { background: var(--accent); }
 .empty .btn { margin-top: 12px; }
 .empty--sm { padding: 26px 12px; }
 
-/* ----------------------------------------------------------- liens utiles */
+/* ------------------------------------------------------------ useful links */
 .group + .group { margin-top: 26px; }
 .group-title { color: var(--mute); margin: 0 4px 12px; display: flex; gap: 8px; }
 .group-title span { opacity: 0.6; }
@@ -431,7 +431,7 @@ body[data-project] .chip[aria-pressed="true"] { background: var(--accent); }
 .lcard:hover .lcard-main > .i, .lcard:focus-within .lcard-main > .i { opacity: 0; }
 @media (hover: none) { .lcard .row-actions { position: static; justify-self: end; opacity: 1; box-shadow: none; background: none; } }
 
-/* --------------------------------------------------------- statistiques */
+/* --------------------------------------------------------- statistics */
 .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-bottom: 18px; }
 .mcard {
   display: grid; gap: 4px; padding: 16px 18px 14px; border-radius: var(--r-lg); text-align: left;
@@ -450,7 +450,7 @@ body[data-project] .chip[aria-pressed="true"] { background: var(--accent); }
 .src:hover { color: var(--accent); }
 .src .i { width: 13px; height: 13px; }
 
-/* ----------------------------------------------------------- calendrier */
+/* ------------------------------------------------------------- calendar */
 .cal-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .cal-month { font-family: var(--display); font-size: 20px; font-weight: 500; letter-spacing: -0.01em; min-width: 170px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
@@ -480,7 +480,7 @@ body[data-project] .chip[aria-pressed="true"] { background: var(--accent); }
 .ev-line .i { color: var(--mute); margin-top: 1px; }
 .ev-notes { white-space: pre-wrap; padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--ink-2); }
 
-/* ---------------------------------------------------------- répertoire */
+/* ----------------------------------------------------------- directory */
 .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
 .pcard { position: relative; display: grid; justify-items: center; text-align: center; gap: 4px; padding: 24px 18px 18px; border-radius: var(--r-xl); background: var(--surface); box-shadow: var(--sh-card); }
 .pcard .avatar--lg { margin-bottom: 10px; }
@@ -495,7 +495,7 @@ body[data-project="escld"] .avatar--lg { color: #f0e3c6; }
 .avatar--sm { width: 32px; height: 32px; font-size: 11px; }
 .exec-star { color: var(--gold, var(--warn)); width: 14px; height: 14px; fill: currentColor; stroke: none; display: inline-block; vertical-align: -1px; margin-left: 6px; }
 
-/* -------------------------------------------------------------- modales */
+/* --------------------------------------------------------------- modals */
 dialog.modal {
   margin: auto; padding: 0; border: 0; background: transparent; color: inherit;
   width: min(600px, calc(100vw - 24px)); max-height: calc(100vh - 32px); overflow: visible;
@@ -572,7 +572,7 @@ dialog.modal.is-closing .modal-box { opacity: 0; transform: translateY(6px) scal
 .toast--error .i { color: #ffab9f; }
 .toast.is-out { opacity: 0; transform: translateY(8px); }
 
-/* ======================================================== accès / accueil */
+/* ===================================================== access / home */
 .screen { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
 .notfound { text-align: center; color: var(--mute); }
 .notfound h1 { font-size: 22px; font-weight: 500; color: var(--ink); margin-top: 8px; }

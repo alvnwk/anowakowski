@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Nova — espace privé · noyau partagé
-   Données (Supabase en ligne, ou démo locale), session, composants d'interface.
+   Nova — private workspace · shared core
+   Data (Supabase online, or local demo), session and UI components.
    ========================================================================== */
 (function () {
   'use strict';
@@ -12,20 +12,21 @@
   const LOCAL = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(host) || /\.(localhost|test)$/.test(host);
   const MODE = CFG.supabaseUrl && CFG.supabaseAnonKey ? 'live' : LOCAL ? 'demo' : 'off';
   const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js';
+  const LOCALE = 'en-GB';
 
-  /* ------------------------------------------------------------ utilitaires */
+  /* ---------------------------------------------------------------- helpers */
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2));
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
-  const safeName = (n) => String(n || 'fichier').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w.\-]+/g, '_').slice(-120);
+  const safeName = (n) => String(n || 'file').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w.\-]+/g, '_').slice(-120);
 
   function safeUrl(u) {
     u = String(u || '').trim();
     if (!u) return '';
     if (/^(https?:|mailto:|tel:)/i.test(u)) return u;
-    if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return ''; // javascript:, data:… refusés
+    if (/^[a-z][a-z0-9+.-]*:/i.test(u)) return ''; // javascript:, data:… rejected
     return 'https://' + u.replace(/^\/+/, '');
   }
   function domainOf(u) {
@@ -42,26 +43,28 @@
   }
   function fmtDate(s, opts) {
     const d = s instanceof Date ? s : parseDay(s);
-    return d ? d.toLocaleDateString('fr-FR', opts || { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    return d ? d.toLocaleDateString(LOCALE, opts || { day: 'numeric', month: 'short', year: 'numeric' }) : '';
   }
-  const fmtLong = (d = new Date()) => cap(d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
-  const EUR = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
-  const NUM = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
+  const fmtLong = (d = new Date()) => d.toLocaleDateString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const EUR = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'EUR' });
+  const EUR0 = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+  const NUM = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 });
   const fmtMoney = (n) => EUR.format(Number(n) || 0);
+  const fmtMoney0 = (n) => EUR0.format(Number(n) || 0);
   const fmtNum = (n) => NUM.format(Number(n) || 0);
   function fmtSize(b) {
     b = Number(b) || 0;
-    if (b < 1024) return b + ' o';
-    if (b < 1048576) return Math.round(b / 1024) + ' Ko';
-    return (b / 1048576).toFixed(1).replace('.', ',') + ' Mo';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return Math.round(b / 1024) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
   }
   function ago(ts) {
     if (!ts) return '';
     const s = (Date.now() - new Date(ts).getTime()) / 1000;
-    if (s < 60) return 'à l’instant';
-    if (s < 3600) return `il y a ${Math.floor(s / 60)} min`;
-    if (s < 86400) return `il y a ${Math.floor(s / 3600)} h`;
-    if (s < 86400 * 7) return `il y a ${Math.floor(s / 86400)} j`;
+    if (s < 60) return 'just now';
+    if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+    if (s < 86400 * 7) return `${Math.floor(s / 86400)} d ago`;
     return fmtDate(new Date(ts));
   }
   function initials(name, email) {
@@ -74,16 +77,16 @@
 
   function humanError(e) {
     const m = String((e && (e.message || e.error_description || e.msg)) || e || '');
-    if (/Invalid login credentials/i.test(m)) return 'Email ou mot de passe incorrect.';
-    if (/already registered|already been registered|User already exists/i.test(m)) return 'Un compte existe déjà avec cette adresse : utilisez « Se connecter ».';
-    if (/Database error saving new user|non autoris|Signups not allowed/i.test(m)) return 'Cette adresse n’a pas encore été autorisée. Demandez l’accès à un administrateur.';
-    if (/Email not confirmed/i.test(m)) return 'Adresse email non confirmée. Vérifiez votre boîte de réception.';
-    if (/Password should|weak password|at least/i.test(m)) return 'Mot de passe trop faible : 8 caractères minimum.';
-    if (/rate limit|too many|security purposes/i.test(m)) return 'Trop de tentatives. Réessayez dans quelques minutes.';
-    if (/row-level security|permission denied|violates/i.test(m)) return 'Action non autorisée pour votre compte.';
-    if (/too large|maximum allowed size|Payload/i.test(m)) return 'Fichier trop volumineux (50 Mo maximum).';
-    if (/Failed to fetch|NetworkError|Load failed|Chargement impossible/i.test(m)) return 'Connexion impossible. Vérifiez votre réseau puis réessayez.';
-    return m || 'Une erreur est survenue.';
+    if (/Invalid login credentials/i.test(m)) return 'Incorrect email or password.';
+    if (/already registered|already been registered|User already exists/i.test(m)) return 'An account already exists for this address: use "Sign in".';
+    if (/Database error saving new user|non autoris|not authori[sz]ed|Signups not allowed/i.test(m)) return 'This address has not been granted access yet. Ask an administrator.';
+    if (/Email not confirmed/i.test(m)) return 'Email address not confirmed. Check your inbox.';
+    if (/Password should|weak password|at least/i.test(m)) return 'Password too weak: at least 8 characters.';
+    if (/rate limit|too many|security purposes/i.test(m)) return 'Too many attempts. Try again in a few minutes.';
+    if (/row-level security|permission denied|violates/i.test(m)) return 'Your account is not allowed to do this.';
+    if (/too large|maximum allowed size|Payload/i.test(m)) return 'File too large (50 MB maximum).';
+    if (/Failed to fetch|NetworkError|Load failed|Could not load/i.test(m)) return 'Cannot connect. Check your network and try again.';
+    return m || 'Something went wrong.';
   }
 
   function loadScript(src) {
@@ -93,12 +96,12 @@
       s.crossOrigin = 'anonymous';
       s.referrerPolicy = 'no-referrer';
       s.onload = resolve;
-      s.onerror = () => reject(new Error('Chargement impossible : ' + src));
+      s.onerror = () => reject(new Error('Could not load: ' + src));
       document.head.appendChild(s);
     });
   }
 
-  /* ===================================================== données : Supabase */
+  /* ======================================================== data: Supabase */
   let sbClient = null;
   async function sb() {
     if (sbClient) return sbClient;
@@ -156,20 +159,20 @@
     async removeMember(email) { const c = await sb(); must(await c.from('members').delete().eq('email', email)); },
   };
 
-  /* ================================================ données : démo locale */
-  const DEMO_KEY = 'nova-space-demo-v1';
+  /* ====================================================== data: local demo */
+  const DEMO_KEY = 'nova-space-demo-v2';
   let demoMem = null;
   function demoState() {
     if (demoMem) return demoMem;
     try {
       const s = JSON.parse(localStorage.getItem(DEMO_KEY) || 'null');
-      if (s && s.v === 1) return (demoMem = s);
-    } catch (e) { /* stockage indisponible */ }
+      if (s && s.v === 2) return (demoMem = s);
+    } catch (e) { /* storage unavailable */ }
     demoMem = demoSeed();
     demoSave();
     return demoMem;
   }
-  function demoSave() { try { localStorage.setItem(DEMO_KEY, JSON.stringify(demoMem)); } catch (e) { /* plein ou bloqué : reste en mémoire */ } }
+  function demoSave() { try { localStorage.setItem(DEMO_KEY, JSON.stringify(demoMem)); } catch (e) { /* full or blocked: keep in memory */ } }
   const demoMember = (email) => demoState().members.find((m) => m.email === email) || null;
   const demoMe = () => { const s = demoState(); return s.session ? demoMember(s.session) : null; };
   const demoCan = (p) => canAccess(demoMe(), p);
@@ -222,14 +225,14 @@
     },
     async upload(project, kind, file) {
       if (!demoCan(project)) deny();
-      if (file.size > 1.5 * 1048576) throw new Error('En mode démo, les fichiers sont limités à 1,5 Mo (50 Mo en ligne).');
+      if (file.size > 1.5 * 1048576) throw new Error('In demo mode, files are limited to 1.5 MB (50 MB online).');
       const path = `${project}/${kind}/${uid()}-${safeName(file.name)}`;
       demoState().files[path] = await fileToDataUrl(file); demoSave();
       return path;
     },
     async fileUrl(path) {
       const d = demoState().files[path];
-      if (!d) throw new Error('Fichier introuvable (les documents d’exemple de la démo n’ont pas de fichier réel).');
+      if (!d) throw new Error('File not found (the demo sample documents have no real file).');
       const blob = await (await fetch(d)).blob();
       return URL.createObjectURL(blob);
     },
@@ -237,7 +240,7 @@
     async listMembers() { demoAdmin(); return clone(demoState().members); },
     async addMember(row) {
       demoAdmin();
-      if (demoMember(row.email)) throw new Error('Cette adresse figure déjà dans la liste.');
+      if (demoMember(row.email)) throw new Error('This address is already on the list.');
       const m = Object.assign({ full_name: '', is_admin: false, projects: [], active: true, created_at: new Date().toISOString(), last_seen: null }, row);
       demoState().members.push(m); demoSave();
       return clone(m);
@@ -246,7 +249,7 @@
     async removeMember(email) { demoAdmin(); const s = demoState(); s.members = s.members.filter((m) => m.email !== email); demoSave(); },
   };
 
-  /* Données d'exemple, uniquement pour la démo locale. */
+  /* Sample data, for the local demo only. */
   function demoSeed() {
     const t = new Date();
     const day = (n) => { const d = new Date(t); d.setDate(d.getDate() + n); return isoDay(d); };
@@ -257,90 +260,90 @@
 
     /* ---- Auralys */
     [
-      ['Auralys — application', 'https://auralys.app', 'Produit', 'Version publique de l’application.'],
-      ['Blog Auralys', 'https://blog.auralys.app', 'Produit', 'Articles, annonces et notes de version.'],
-      ['GitHub', 'https://github.com', 'Outils', 'Code source et déploiements.'],
-      ['Supabase', 'https://supabase.com/dashboard', 'Outils', 'Base de données et comptes.'],
-      ['INPI — marques', 'https://www.inpi.fr', 'Juridique', 'Suivi du dépôt de la marque.'],
-      ['CNIL — RGPD', 'https://www.cnil.fr', 'Juridique', 'Obligations sur les données personnelles.'],
+      ['Auralys — app', 'https://auralys.app', 'Product', 'Public version of the app.'],
+      ['Auralys blog', 'https://blog.auralys.app', 'Product', 'Articles, announcements and release notes.'],
+      ['GitHub', 'https://github.com', 'Tools', 'Source code and deployments.'],
+      ['Supabase', 'https://supabase.com/dashboard', 'Tools', 'Database and accounts.'],
+      ['INPI — trademarks', 'https://www.inpi.fr', 'Legal', 'Trademark filing follow-up.'],
+      ['CNIL — GDPR', 'https://www.cnil.fr', 'Legal', 'Personal data obligations.'],
     ].forEach(([title, url, category, description]) => add('auralys', 'link', { title, url, category, description }));
-    [180, 260, 410, 590, 760, 940].forEach((v, i) => add('auralys', 'stat', { metric: 'Utilisateurs actifs', value: v, unit: 'utilisateurs', date: mon(i - 5, 28), source: 'https://auralys.app', comment: i === 5 ? 'Pic après la campagne Instagram.' : '' }));
-    [1200, 1650, 2300, 3100].forEach((v, i) => add('auralys', 'stat', { metric: 'Avis publiés', value: v, unit: 'avis', date: mon(i - 3, 27), source: '', comment: '' }));
-    [4.4, 4.5, 4.7].forEach((v, i) => add('auralys', 'stat', { metric: 'Note moyenne', value: v, unit: '/ 5', date: mon(i - 2, 20), source: '', comment: i === 2 ? 'Après la refonte du classement.' : '' }));
-    add('auralys', 'event', { title: 'Point produit', date: day(1), start: '10:00', end: '11:00', place: 'Visio', category: 'Réunion', description: 'Revue des retours de la bêta.' });
-    add('auralys', 'event', { title: 'Mise en ligne Bêta 1.9', date: day(6), category: 'Échéance', description: '' });
-    add('auralys', 'event', { title: 'Soirée d’écoute communauté', date: day(12), start: '19:30', end: '22:30', place: 'Paris', category: 'Évènement', description: '' });
-    add('auralys', 'event', { title: 'Renouvellement nom de domaine', date: day(24), category: 'Échéance', description: '' });
-    add('auralys', 'legal', { title: 'Conditions générales d’utilisation', category: 'CGU / CGV', date: mon(-2, 3), source: 'link', link: 'https://auralys.app', notes: 'Version 1.2' });
-    add('auralys', 'legal', { title: 'Politique de confidentialité', category: 'RGPD / données', date: mon(-2, 3), source: 'link', link: 'https://auralys.app', notes: '' });
-    add('auralys', 'legal', { title: 'Certificat de dépôt de marque', category: 'Propriété intellectuelle', date: mon(-7, 14), source: 'link', link: 'https://www.inpi.fr', notes: 'Original papier au siège.' });
-    add('auralys', 'entry', { type: 'in', label: 'Apport initial', amount: 2500, date: mon(-8, 2), category: 'Apport', method: 'Virement', notes: '' });
-    for (let i = -8; i <= 0; i++) add('auralys', 'entry', { type: 'out', label: 'Hébergement serveur', amount: 24.9, date: mon(i, 5), category: 'Hébergement & outils', method: 'Carte bancaire', notes: '' });
-    add('auralys', 'entry', { type: 'out', label: 'Dépôt de marque INPI', amount: 190, date: mon(-7, 14), category: 'Juridique', method: 'Carte bancaire', notes: '' });
-    add('auralys', 'entry', { type: 'out', label: 'Campagne Instagram', amount: 320, date: mon(-1, 9), category: 'Marketing', method: 'Carte bancaire', notes: '' });
-    add('auralys', 'entry', { type: 'in', label: 'Prix concours étudiant', amount: 800, date: mon(-3, 18), category: 'Subvention / prix', method: 'Virement', notes: '' });
-    add('auralys', 'entry', { type: 'out', label: 'Nom de domaine auralys.app', amount: 15, date: mon(-4, 2), category: 'Hébergement & outils', method: 'Carte bancaire', notes: '' });
+    [180, 260, 410, 590, 760, 940].forEach((v, i) => add('auralys', 'stat', { metric: 'Active users', value: v, unit: 'users', date: mon(i - 5, 28), source: 'https://auralys.app', comment: i === 5 ? 'Peak after the Instagram campaign.' : '' }));
+    [1200, 1650, 2300, 3100].forEach((v, i) => add('auralys', 'stat', { metric: 'Reviews posted', value: v, unit: 'reviews', date: mon(i - 3, 27), source: '', comment: '' }));
+    [4.4, 4.5, 4.7].forEach((v, i) => add('auralys', 'stat', { metric: 'Average rating', value: v, unit: '/ 5', date: mon(i - 2, 20), source: '', comment: i === 2 ? 'After the ranking redesign.' : '' }));
+    add('auralys', 'event', { title: 'Product sync', date: day(1), start: '10:00', end: '11:00', place: 'Video call', category: 'Meeting', description: 'Review of beta feedback.' });
+    add('auralys', 'event', { title: 'Beta 1.9 release', date: day(6), category: 'Deadline', description: '' });
+    add('auralys', 'event', { title: 'Community listening night', date: day(12), start: '19:30', end: '22:30', place: 'Paris', category: 'Event', description: '' });
+    add('auralys', 'event', { title: 'Domain name renewal', date: day(24), category: 'Deadline', description: '' });
+    add('auralys', 'legal', { title: 'Terms of use', category: 'Terms / T&Cs', date: mon(-2, 3), source: 'link', link: 'https://auralys.app', notes: 'Version 1.2' });
+    add('auralys', 'legal', { title: 'Privacy policy', category: 'GDPR / data', date: mon(-2, 3), source: 'link', link: 'https://auralys.app', notes: '' });
+    add('auralys', 'legal', { title: 'Trademark filing certificate', category: 'Intellectual property', date: mon(-7, 14), source: 'link', link: 'https://www.inpi.fr', notes: 'Paper original at the head office.' });
+    add('auralys', 'entry', { type: 'in', label: 'Initial contribution', amount: 2500, date: mon(-8, 2), category: 'Contribution', method: 'Bank transfer', notes: '' });
+    for (let i = -8; i <= 0; i++) add('auralys', 'entry', { type: 'out', label: 'Server hosting', amount: 24.9, date: mon(i, 5), category: 'Hosting & tools', method: 'Card', notes: '' });
+    add('auralys', 'entry', { type: 'out', label: 'INPI trademark filing', amount: 190, date: mon(-7, 14), category: 'Legal', method: 'Card', notes: '' });
+    add('auralys', 'entry', { type: 'out', label: 'Instagram campaign', amount: 320, date: mon(-1, 9), category: 'Marketing', method: 'Card', notes: '' });
+    add('auralys', 'entry', { type: 'in', label: 'Student competition prize', amount: 800, date: mon(-3, 18), category: 'Grant / prize', method: 'Bank transfer', notes: '' });
+    add('auralys', 'entry', { type: 'out', label: 'auralys.app domain name', amount: 15, date: mon(-4, 2), category: 'Hosting & tools', method: 'Card', notes: '' });
 
     /* ---- ESCLD */
     [
-      ['escld.eu', 'https://escld.eu', 'Communication', 'Site officiel.'],
-      ['LinkedIn ESCLD', 'https://www.linkedin.com/company/escld/', 'Communication', 'Page entreprise.'],
+      ['escld.eu', 'https://escld.eu', 'Communication', 'Official website.'],
+      ['ESCLD on LinkedIn', 'https://www.linkedin.com/company/escld/', 'Communication', 'Company page.'],
       ['Instagram', 'https://instagram.com/escld.eu', 'Communication', ''],
-      ['Le Compte Asso', 'https://lecompteasso.associations.gouv.fr', 'Administratif', 'Demandes de subventions.'],
-      ['Service-Public — associations', 'https://www.service-public.fr/associations', 'Administratif', 'Démarches de l’association.'],
-      ['Journal officiel — associations', 'https://www.journal-officiel.gouv.fr/pages/associations-recherche/', 'Juridique', 'Publication de la déclaration.'],
+      ['Le Compte Asso', 'https://lecompteasso.associations.gouv.fr', 'Administration', 'Grant applications.'],
+      ['Service-Public — associations', 'https://www.service-public.fr/associations', 'Administration', 'Association procedures.'],
+      ['Journal officiel — associations', 'https://www.journal-officiel.gouv.fr/pages/associations-recherche/', 'Legal', 'Publication of the declaration.'],
     ].forEach(([title, url, category, description]) => add('escld', 'link', { title, url, category, description }));
     [
-      ['Camille Laurent', 'Présidente', 'Bureau', true, 1],
-      ['Hugo Martin', 'Vice-président', 'Bureau', true, 2],
-      ['Inès Bernard', 'Secrétaire générale', 'Bureau', true, 3],
-      ['Lucas Petit', 'Trésorier', 'Bureau', true, 4],
-      ['Sofia Rossi', 'Responsable de conseil', 'Law & Institutions', false, 0],
-      ['Jonas Weber', 'Responsable de conseil', 'Diplomacy & International Relations', false, 0],
-      ['Léa Dubois', 'Responsable de conseil', 'Europe & Fundamental Rights', false, 0],
-      ['Mathis Leroy', 'Membre', 'Law & Institutions', false, 0],
-      ['Clara Moreau', 'Membre', 'Diplomacy & International Relations', false, 0],
-      ['Elena García', 'Membre', 'Europe & Fundamental Rights', false, 0],
+      ['Camille Laurent', 'President', 'Board', true, 1],
+      ['Hugo Martin', 'Vice-President', 'Board', true, 2],
+      ['Inès Bernard', 'Secretary General', 'Board', true, 3],
+      ['Lucas Petit', 'Treasurer', 'Board', true, 4],
+      ['Sofia Rossi', 'Council lead', 'Law & Institutions', false, 0],
+      ['Jonas Weber', 'Council lead', 'Diplomacy & International Relations', false, 0],
+      ['Léa Dubois', 'Council lead', 'Europe & Fundamental Rights', false, 0],
+      ['Mathis Leroy', 'Member', 'Law & Institutions', false, 0],
+      ['Clara Moreau', 'Member', 'Diplomacy & International Relations', false, 0],
+      ['Elena García', 'Member', 'Europe & Fundamental Rights', false, 0],
     ].forEach(([name, role, council, exec, order], i) => add('escld', 'member', {
-      name, role, council, exec, exec_order: order || null, school: ['Paris', 'Lyon', 'Bruxelles', 'Strasbourg', 'Milan', 'Berlin'][i % 6],
-      email: name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.') + '@exemple.eu', phone: '', since: mon(-14 + i, 10), linkedin: '', notes: '',
+      name, role, council, exec, exec_order: order || null, school: ['Paris', 'Lyon', 'Brussels', 'Strasbourg', 'Milan', 'Berlin'][i % 6],
+      email: name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.') + '@example.eu', phone: '', since: mon(-14 + i, 10), linkedin: '', notes: '',
     }));
-    [42, 51, 63, 70, 78, 86].forEach((v, i) => add('escld', 'stat', { metric: 'Membres', value: v, unit: 'membres', date: mon(i - 5, 28), source: '', comment: i === 3 ? 'Rentrée universitaire.' : '' }));
-    [600, 820, 1150].forEach((v, i) => add('escld', 'stat', { metric: 'Abonnés LinkedIn', value: v, unit: 'abonnés', date: mon(i - 2, 26), source: 'https://www.linkedin.com/company/escld/', comment: '' }));
-    add('escld', 'event', { title: 'Réunion du bureau', date: day(2), start: '18:30', end: '19:30', place: 'Visio', category: 'Réunion', description: 'Ordre du jour : budget, partenariats.' });
-    add('escld', 'event', { title: 'Assemblée générale', date: day(9), start: '14:00', end: '17:00', place: 'Salle des actes', category: 'Évènement', description: '' });
-    add('escld', 'event', { title: 'Dépôt dossier de subvention', date: day(15), category: 'Échéance', description: '' });
-    add('escld', 'event', { title: 'Conférence : l’Europe et l’État de droit', date: day(20), start: '18:00', end: '20:00', place: 'Amphithéâtre B', category: 'Évènement', description: '' });
-    add('escld', 'admin_doc', { title: 'Récépissé de déclaration en préfecture', category: 'Déclaration / récépissé', date: mon(-11, 8), source: 'link', link: 'https://www.service-public.fr/associations', notes: '' });
-    add('escld', 'admin_doc', { title: 'Procès-verbal de l’AG constitutive', category: 'Procès-verbal', date: mon(-12, 2), source: 'link', link: 'https://escld.eu', notes: '' });
-    add('escld', 'admin_doc', { title: 'Attestation d’assurance', category: 'Assurance', date: mon(-2, 1), source: 'link', link: 'https://escld.eu', notes: 'Valable jusqu’au 31/12.' });
-    add('escld', 'legal', { title: 'Statuts de l’association', category: 'Statuts', date: mon(-12, 2), source: 'link', link: 'https://escld.eu', notes: 'Version déposée.' });
-    add('escld', 'legal', { title: 'Règlement intérieur', category: 'Règlement intérieur', date: mon(-10, 15), source: 'link', link: 'https://escld.eu', notes: '' });
-    add('escld', 'legal', { title: 'Convention de partenariat — faculté', category: 'Convention / partenariat', date: mon(-3, 22), source: 'link', link: 'https://escld.eu', notes: '' });
-    add('escld', 'entry', { type: 'in', label: 'Cotisations — rentrée', amount: 680, date: mon(-2, 15), category: 'Cotisations', method: 'Virement', notes: '' });
-    add('escld', 'entry', { type: 'in', label: 'Subvention de la faculté', amount: 1200, date: mon(-1, 20), category: 'Subventions', method: 'Virement', notes: '' });
-    add('escld', 'entry', { type: 'out', label: 'Assurance responsabilité civile', amount: 145, date: mon(-2, 1), category: 'Assurance', method: 'Prélèvement', notes: '' });
-    add('escld', 'entry', { type: 'out', label: 'Impression affiches conférence', amount: 86.4, date: mon(-1, 3), category: 'Communication', method: 'Carte bancaire', notes: '' });
-    add('escld', 'entry', { type: 'out', label: 'Location de salle', amount: 250, date: mon(0, 4), category: 'Salle & logistique', method: 'Virement', notes: '' });
-    add('escld', 'entry', { type: 'in', label: 'Cotisations — novembre', amount: 140, date: mon(0, 10), category: 'Cotisations', method: 'Espèces', notes: '' });
+    [42, 51, 63, 70, 78, 86].forEach((v, i) => add('escld', 'stat', { metric: 'Members', value: v, unit: 'members', date: mon(i - 5, 28), source: '', comment: i === 3 ? 'Start of the academic year.' : '' }));
+    [600, 820, 1150].forEach((v, i) => add('escld', 'stat', { metric: 'LinkedIn followers', value: v, unit: 'followers', date: mon(i - 2, 26), source: 'https://www.linkedin.com/company/escld/', comment: '' }));
+    add('escld', 'event', { title: 'Board meeting', date: day(2), start: '18:30', end: '19:30', place: 'Video call', category: 'Meeting', description: 'Agenda: budget, partnerships.' });
+    add('escld', 'event', { title: 'General assembly', date: day(9), start: '14:00', end: '17:00', place: 'Main hall', category: 'Event', description: '' });
+    add('escld', 'event', { title: 'Grant application deadline', date: day(15), category: 'Deadline', description: '' });
+    add('escld', 'event', { title: 'Conference: Europe and the rule of law', date: day(20), start: '18:00', end: '20:00', place: 'Lecture hall B', category: 'Event', description: '' });
+    add('escld', 'admin_doc', { title: 'Prefecture declaration receipt', category: 'Declaration / receipt', date: mon(-11, 8), source: 'link', link: 'https://www.service-public.fr/associations', notes: '' });
+    add('escld', 'admin_doc', { title: 'Minutes of the founding assembly', category: 'Minutes', date: mon(-12, 2), source: 'link', link: 'https://escld.eu', notes: '' });
+    add('escld', 'admin_doc', { title: 'Insurance certificate', category: 'Insurance', date: mon(-2, 1), source: 'link', link: 'https://escld.eu', notes: 'Valid until 31/12.' });
+    add('escld', 'legal', { title: 'Articles of association', category: 'Articles of association', date: mon(-12, 2), source: 'link', link: 'https://escld.eu', notes: 'Filed version.' });
+    add('escld', 'legal', { title: 'Internal rules', category: 'Internal rules', date: mon(-10, 15), source: 'link', link: 'https://escld.eu', notes: '' });
+    add('escld', 'legal', { title: 'Partnership agreement — faculty', category: 'Agreement / partnership', date: mon(-3, 22), source: 'link', link: 'https://escld.eu', notes: '' });
+    add('escld', 'entry', { type: 'in', label: 'Membership fees — autumn', amount: 680, date: mon(-2, 15), category: 'Membership fees', method: 'Bank transfer', notes: '' });
+    add('escld', 'entry', { type: 'in', label: 'Faculty grant', amount: 1200, date: mon(-1, 20), category: 'Grants', method: 'Bank transfer', notes: '' });
+    add('escld', 'entry', { type: 'out', label: 'Liability insurance', amount: 145, date: mon(-2, 1), category: 'Insurance', method: 'Direct debit', notes: '' });
+    add('escld', 'entry', { type: 'out', label: 'Conference posters printing', amount: 86.4, date: mon(-1, 3), category: 'Communication', method: 'Card', notes: '' });
+    add('escld', 'entry', { type: 'out', label: 'Room hire', amount: 250, date: mon(0, 4), category: 'Venue & logistics', method: 'Bank transfer', notes: '' });
+    add('escld', 'entry', { type: 'in', label: 'Membership fees — this month', amount: 140, date: mon(0, 10), category: 'Membership fees', method: 'Cash', notes: '' });
 
     return {
-      v: 1,
+      v: 2,
       session: null,
       files: {},
       items,
       members: [
-        { email: 'admin@demo.local', full_name: 'Alex Démo', is_admin: true, projects: ['auralys', 'escld'], active: true, created_at: stamp, last_seen: null },
-        { email: 'auralys@demo.local', full_name: 'Membre Auralys', is_admin: false, projects: ['auralys'], active: true, created_at: stamp, last_seen: null },
-        { email: 'escld@demo.local', full_name: 'Membre ESCLD', is_admin: false, projects: ['escld'], active: true, created_at: stamp, last_seen: null },
-        { email: 'ancien@demo.local', full_name: 'Ancien membre', is_admin: false, projects: ['escld'], active: false, created_at: stamp, last_seen: null },
+        { email: 'admin@demo.local', full_name: 'Alex Demo', is_admin: true, projects: ['auralys', 'escld'], active: true, created_at: stamp, last_seen: null },
+        { email: 'auralys@demo.local', full_name: 'Auralys Member', is_admin: false, projects: ['auralys'], active: true, created_at: stamp, last_seen: null },
+        { email: 'escld@demo.local', full_name: 'ESCLD Member', is_admin: false, projects: ['escld'], active: true, created_at: stamp, last_seen: null },
+        { email: 'former@demo.local', full_name: 'Former member', is_admin: false, projects: ['escld'], active: false, created_at: stamp, last_seen: null },
       ],
     };
   }
 
   const api = MODE === 'live' ? live : demo;
 
-  /* ================================================================ icônes */
+  /* ================================================================== icons */
   const ICONS = {
     home: '<path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9v11h13V9"/><path d="M10 20v-5h4v5"/>',
     grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>',
@@ -389,14 +392,14 @@
   const icon = (name, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
   const MARK = '<svg class="nova-mark" viewBox="-196 0 392 281" aria-hidden="true"><path d="M0 0 196 196 111 281 0 170-111 281-196 196Z"/></svg>';
 
-  /* ========================================================== formulaires */
+  /* ================================================================== forms */
   let fieldSeq = 0;
   function fieldHtml(f, v) {
     const id = 'f' + ++fieldSeq;
     const val = v != null ? v : f.value != null ? f.value : '';
     const span = f.span === 2 ? ' span-2' : '';
     const show = f.showIf ? ` data-show-if="${esc(f.showIf)}"` : '';
-    const opt = f.required || ['checkbox', 'segment', 'select'].includes(f.type) || f.optional === false ? '' : '<em>facultatif</em>';
+    const opt = f.required || ['checkbox', 'segment', 'select'].includes(f.type) || f.optional === false ? '' : '<em>optional</em>';
     const hint = f.hint ? `<small class="hint">${esc(f.hint)}</small>` : '';
     const attrs = (f.required ? ' required' : '') + (f.placeholder ? ` placeholder="${esc(f.placeholder)}"` : '') +
       (f.step ? ` step="${esc(f.step)}"` : '') + (f.min != null ? ` min="${esc(f.min)}"` : '') + (f.inputmode ? ` inputmode="${f.inputmode}"` : '') +
@@ -411,14 +414,18 @@
       case 'textarea':
         input = `<textarea id="${id}" name="${f.name}" rows="${f.rows || 3}"${attrs}>${esc(val)}</textarea>`;
         break;
-      case 'select':
-        input = `<select id="${id}" name="${f.name}"${attrs}>${f.options.map((o) => {
+      case 'select': {
+        /* keep a saved value that is no longer in the list (e.g. older entries) */
+        const values = f.options.map((o) => String(typeof o === 'object' ? o.value : o));
+        const opts = val !== '' && !values.includes(String(val)) ? [val].concat(f.options) : f.options;
+        input = `<select id="${id}" name="${f.name}"${attrs}>${opts.map((o) => {
           const ov = typeof o === 'object' ? o.value : o; const ol = typeof o === 'object' ? o.label : o;
           return `<option value="${esc(ov)}"${String(ov) === String(val) ? ' selected' : ''}>${esc(ol)}</option>`;
         }).join('')}</select>`;
         break;
+      }
       case 'file':
-        input = `<label class="drop" for="${id}">${icon('upload')}<span class="drop-txt">${f.current ? `Fichier actuel : <b>${esc(f.current)}</b><br><small>Choisir un autre fichier pour le remplacer</small>` : 'Choisir un fichier <small>ou le déposer ici</small>'}</span><input id="${id}" type="file" name="${f.name}"${f.accept ? ` accept="${esc(f.accept)}"` : ''}></label>`;
+        input = `<label class="drop" for="${id}">${icon('upload')}<span class="drop-txt">${f.current ? `Current file: <b>${esc(f.current)}</b><br><small>Choose another file to replace it</small>` : 'Choose a file <small>or drop it here</small>'}</span><input id="${id}" type="file" name="${f.name}"${f.accept ? ` accept="${esc(f.accept)}"` : ''}></label>`;
         break;
       default: {
         const list = f.list && f.list.length ? ` list="${id}-l"` : '';
@@ -473,7 +480,7 @@
     });
   }
 
-  /* ================================================================ modales */
+  /* ================================================================= modals */
   function modal(o) {
     return new Promise((resolve) => {
       const dlg = document.createElement('dialog');
@@ -482,14 +489,14 @@
         <form class="modal-box" novalidate>
           <header class="modal-head">
             <div>${o.kicker ? `<p class="mono modal-kicker">${esc(o.kicker)}</p>` : ''}<h2>${esc(o.title)}</h2>${o.subtitle ? `<p class="modal-sub">${esc(o.subtitle)}</p>` : ''}</div>
-            <button type="button" class="icon-btn" data-close aria-label="Fermer">${icon('x')}</button>
+            <button type="button" class="icon-btn" data-close aria-label="Close">${icon('x')}</button>
           </header>
           <div class="modal-body">${o.body || ''}</div>
           <p class="form-error" role="alert" hidden></p>
           <footer class="modal-foot">
             ${o.extra || ''}<span class="grow"></span>
-            ${o.cancel === false ? '' : `<button type="button" class="btn" data-close>${esc(o.cancel || 'Annuler')}</button>`}
-            ${o.submit === false ? '' : `<button type="submit" class="btn ${o.danger ? 'btn-danger' : 'btn-primary'}">${esc(o.submit || 'Enregistrer')}</button>`}
+            ${o.cancel === false ? '' : `<button type="button" class="btn" data-close>${esc(o.cancel || 'Cancel')}</button>`}
+            ${o.submit === false ? '' : `<button type="submit" class="btn ${o.danger ? 'btn-danger' : 'btn-primary'}">${esc(o.submit || 'Save')}</button>`}
           </footer>
         </form>`;
       document.body.appendChild(dlg);
@@ -542,7 +549,7 @@
   }
 
   function confirmBox(o) {
-    return modal({ title: o.title, body: `<p class="modal-text">${esc(o.text || '')}</p>`, submit: o.submit || 'Confirmer', danger: o.danger !== false, small: true, noFocus: true });
+    return modal({ title: o.title, body: `<p class="modal-text">${esc(o.text || '')}</p>`, submit: o.submit || 'Confirm', danger: o.danger !== false, small: true, noFocus: true });
   }
 
   function toast(msg, kind) {
@@ -561,7 +568,7 @@
     setTimeout(() => { t.classList.add('is-out'); setTimeout(() => t.remove(), 300); }, kind === 'error' ? 5200 : 2800);
   }
 
-  /* Ouvre un fichier privé dans un nouvel onglet (lien temporaire de 5 min). */
+  /* Opens a private file in a new tab (temporary 5-minute link). */
   async function openFile(path) {
     const w = window.open('about:blank', '_blank');
     try {
@@ -580,8 +587,8 @@
   }
 
   function csv(rows, cols) {
-    const cell = (v) => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    return '﻿' + [cols.map((c) => cell(c.label)).join(';')].concat(rows.map((r) => cols.map((c) => cell(typeof c.get === 'function' ? c.get(r) : r[c.key])).join(';'))).join('\r\n');
+    const cell = (v) => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    return '﻿' + [cols.map((c) => cell(c.label)).join(',')].concat(rows.map((r) => cols.map((c) => cell(typeof c.get === 'function' ? c.get(r) : r[c.key])).join(','))).join('\r\n');
   }
   function download(name, content, type) {
     const a = document.createElement('a');
@@ -592,34 +599,34 @@
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   }
 
-  /* ============================================================ barre haute */
+  /* ================================================================ top bar */
   function topbar(o) {
     const me = o.me;
     const mine = PROJECT_IDS.filter((p) => canAccess(me, p));
     const inProject = o.current && PROJECTS[o.current];
     const tabs = inProject && mine.length > 1
-      ? `<nav class="tb-projects" aria-label="Changer d’espace">${mine.map((p) => `<a class="tb-proj" href="${PROJECTS[p].path}"${p === o.current ? ' aria-current="page"' : ''} style="--pc:${PROJECTS[p].color}"><i></i>${esc(PROJECTS[p].name)}</a>`).join('')}</nav>`
+      ? `<nav class="tb-projects" aria-label="Switch workspace">${mine.map((p) => `<a class="tb-proj" href="${PROJECTS[p].path}"${p === o.current ? ' aria-current="page"' : ''} style="--pc:${PROJECTS[p].color}"><i></i>${esc(PROJECTS[p].name)}</a>`).join('')}</nav>`
       : '';
     return `
       <header class="topbar">
-        ${o.menuButton ? `<button class="icon-btn tb-menu" type="button" data-action="side" aria-label="Afficher les pages">${icon('menu')}</button>` : ''}
-        <a class="tb-brand" href="/saas/" aria-label="Accueil de l’espace">${MARK}<span>Nova</span></a>
+        ${o.menuButton ? `<button class="icon-btn tb-menu" type="button" data-action="side" aria-label="Show pages">${icon('menu')}</button>` : ''}
+        <a class="tb-brand" href="/saas/" aria-label="Workspace home">${MARK}<span>Nova</span></a>
         ${tabs}
         <span class="grow"></span>
-        ${MODE === 'demo' ? '<span class="badge badge--demo" title="Données fictives enregistrées dans ce navigateur uniquement">Démo locale</span>' : ''}
+        ${MODE === 'demo' ? '<span class="badge badge--demo" title="Sample data stored in this browser only">Local demo</span>' : ''}
         <div class="tb-user">
           <button class="tb-user-btn" type="button" aria-haspopup="true" aria-expanded="false">
             <span class="avatar">${esc(initials(me.full_name, me.email))}</span>
-            <span class="tb-user-txt"><b>${esc(me.full_name || me.email)}</b><small>${me.is_admin ? 'Administrateur' : 'Membre'}</small></span>
+            <span class="tb-user-txt"><b>${esc(me.full_name || me.email)}</b><small>${me.is_admin ? 'Administrator' : 'Member'}</small></span>
             ${icon('chevron-down')}
           </button>
           <div class="menu" hidden>
             <div class="menu-head"><b>${esc(me.full_name || '—')}</b><span>${esc(me.email)}</span></div>
-            <a href="/saas/">${icon('home')}Accueil</a>
-            ${me.is_admin ? `<a href="/saas/admin/">${icon('shield')}Gérer les accès</a>` : ''}
-            <button type="button" data-action="password">${icon('key')}Changer mon mot de passe</button>
+            <a href="/saas/">${icon('home')}Home</a>
+            ${me.is_admin ? `<a href="/saas/admin/">${icon('shield')}Manage access</a>` : ''}
+            <button type="button" data-action="password">${icon('key')}Change my password</button>
             <hr>
-            <button type="button" data-action="logout">${icon('logout')}Se déconnecter</button>
+            <button type="button" data-action="logout">${icon('logout')}Sign out</button>
           </div>
         </div>
       </header>`;
@@ -644,36 +651,36 @@
 
   function changePassword() {
     const fields = [
-      { name: 'password', label: 'Nouveau mot de passe', type: 'password', required: true, min: null, autocomplete: 'new-password', hint: '8 caractères minimum.' },
-      { name: 'confirm', label: 'Confirmer le mot de passe', type: 'password', required: true, autocomplete: 'new-password' },
+      { name: 'password', label: 'New password', type: 'password', required: true, autocomplete: 'new-password', hint: 'At least 8 characters.' },
+      { name: 'confirm', label: 'Confirm password', type: 'password', required: true, autocomplete: 'new-password' },
     ];
     return formModal({
-      title: 'Changer mon mot de passe', fields, submit: 'Mettre à jour', small: true,
+      title: 'Change my password', fields, submit: 'Update', small: true,
       onSubmit: async (v) => {
-        if (v.password.length < 8) throw new Error('Le mot de passe doit contenir au moins 8 caractères.');
-        if (v.password !== v.confirm) throw new Error('Les deux mots de passe ne correspondent pas.');
+        if (v.password.length < 8) throw new Error('The password must be at least 8 characters long.');
+        if (v.password !== v.confirm) throw new Error('The two passwords do not match.');
         await api.setPassword(v.password);
-        toast('Mot de passe mis à jour.');
+        toast('Password updated.');
       },
     });
   }
 
-  /* ======================================================= écrans d'accès */
+  /* ========================================================= access screens */
   function screen(html) {
     const app = document.getElementById('app');
     app.innerHTML = `<div class="screen">${html}</div>`;
     return app;
   }
   function renderOff() {
-    document.title = 'Page introuvable';
+    document.title = 'Page not found';
     document.body.dataset.project = 'nova';
-    screen('<div class="notfound"><p class="mono">404</p><h1>Page introuvable</h1></div>');
+    screen('<div class="notfound"><p class="mono">404</p><h1>Page not found</h1></div>');
   }
   function renderBlocked(kind, me, project) {
     const msg = {
-      closed: ['Accès fermé', 'Votre accès à l’espace a été fermé ou n’a pas encore été ouvert. Contactez un administrateur si vous pensez qu’il s’agit d’une erreur.'],
-      project: ['Espace non autorisé', `Vous n’avez pas accès à l’espace ${project && PROJECTS[project] ? PROJECTS[project].name : ''}. Un administrateur peut vous l’ouvrir.`],
-      admin: ['Réservé aux administrateurs', 'Cette page permet de gérer les accès. Elle est réservée aux administrateurs.'],
+      closed: ['Access closed', 'Your access to the workspace has been closed or has not been opened yet. Contact an administrator if you think this is a mistake.'],
+      project: ['Workspace not available', `You do not have access to the ${project && PROJECTS[project] ? PROJECTS[project].name : ''} workspace. An administrator can open it for you.`],
+      admin: ['Administrators only', 'This page is used to manage access. It is reserved for administrators.'],
     }[kind];
     document.body.dataset.project = 'nova';
     const app = screen(`
@@ -682,8 +689,8 @@
         <h1>${esc(msg[0])}</h1>
         <p>${esc(msg[1])}</p>
         <div class="blocked-actions">
-          ${kind !== 'closed' ? '<a class="btn btn-primary" href="/saas/">Retour à l’accueil</a>' : ''}
-          <button class="btn" type="button" data-logout>${icon('logout')}Se déconnecter</button>
+          ${kind !== 'closed' ? '<a class="btn btn-primary" href="/saas/">Back to home</a>' : ''}
+          <button class="btn" type="button" data-logout>${icon('logout')}Sign out</button>
         </div>
       </div>`);
     app.querySelector('[data-logout]').addEventListener('click', async () => { await api.signOut(); location.href = '/saas/'; });
@@ -691,11 +698,11 @@
 
   function renderError(e) {
     document.body.dataset.project = 'nova';
-    const app = screen(`<div class="card blocked"><span class="blocked-ico">${icon('alert')}</span><h1>Connexion impossible</h1><p>${esc(humanError(e))}</p><div class="blocked-actions"><button class="btn btn-primary" type="button" data-retry>Réessayer</button></div></div>`);
+    const app = screen(`<div class="card blocked"><span class="blocked-ico">${icon('alert')}</span><h1>Cannot connect</h1><p>${esc(humanError(e))}</p><div class="blocked-actions"><button class="btn btn-primary" type="button" data-retry>Try again</button></div></div>`);
     app.querySelector('[data-retry]').addEventListener('click', () => location.reload());
   }
 
-  /* Vérifie la session puis les droits ; renvoie le membre, ou null si la page a été remplacée. */
+  /* Checks the session then the permissions; returns the member, or null if the page was replaced. */
   async function boot(opts) {
     opts = opts || {};
     if (MODE === 'off') { renderOff(); return null; }
@@ -713,8 +720,8 @@
   }
 
   window.Nova = {
-    CFG, PROJECTS, PROJECT_IDS, MODE, api, MARK,
-    uid, esc, cap, safeUrl, domainOf, isoDay, parseDay, fmtDate, fmtLong, fmtMoney, fmtNum, fmtSize, ago, initials, firstName, canAccess, humanError,
+    CFG, PROJECTS, PROJECT_IDS, MODE, LOCALE, api, MARK,
+    uid, esc, cap, safeUrl, domainOf, isoDay, parseDay, fmtDate, fmtLong, fmtMoney, fmtMoney0, fmtNum, fmtSize, ago, initials, firstName, canAccess, humanError,
     icon, fieldHtml, readForm, modal, formModal, confirm: confirmBox, toast, openFile, openLink, csv, download,
     topbar, bindTopbar, changePassword, boot, renderOff, renderBlocked, renderError, screen,
   };

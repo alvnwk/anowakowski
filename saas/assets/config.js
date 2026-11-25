@@ -1,30 +1,30 @@
 /* ==========================================================================
-   Nova — espace privé · configuration
+   Nova — private workspace · configuration
    --------------------------------------------------------------------------
-   1. Collez ici l'URL et la clé publique de votre projet Supabase
-      (Supabase → Project Settings → API). Voir saas-setup/GUIDE.md.
-   2. Tant que ces deux valeurs sont vides :
-        - en local (localhost), l'espace tourne en MODE DÉMO, avec des données
-          fictives enregistrées dans votre navigateur ;
-        - en ligne, les pages affichent un simple « Page introuvable ».
-   La clé « anon / publishable » est faite pour être publique : ce sont les
-   règles de sécurité de la base (supabase.sql) qui protègent les données.
+   1. Paste your Supabase project URL and public key here
+      (Supabase → Project Settings → API). See saas-setup/GUIDE.md.
+   2. While these two values are empty:
+        - locally (localhost), the workspace runs in DEMO MODE, with sample
+          data stored in your browser only;
+        - online, the pages just show "Page not found".
+   The "anon / publishable" key is meant to be public: the database security
+   rules (supabase.sql) are what protect the data.
    ========================================================================== */
 
 window.NOVA_CONFIG = {
-  supabaseUrl: 'https://xshaiasakylgyzqqhqmk.supabase.co',      // ex. 'https://abcdefghijkl.supabase.co'
-  supabaseAnonKey: 'sb_publishable_OuxUyaXxQEuNl9UyX8o_iA_Dil0eEQe',  // ex. 'eyJhbGciOi…' ou 'sb_publishable_…'
-  bucket: 'nova-docs',  // espace de stockage privé des fichiers
+  supabaseUrl: 'https://xshaiasakylgyzqqhqmk.supabase.co',
+  supabaseAnonKey: 'sb_publishable_OuxUyaXxQEuNl9UyX8o_iA_Dil0eEQe',
+  bucket: 'nova-docs',  // private file storage
 };
 
-/* Les espaces projets. Pour en ajouter un : une entrée ici + un dossier
-   /saas-<id>/index.html (copie de /saas-auralys/index.html). */
+/* Project workspaces. To add one: an entry here + a folder
+   /saas-<id>/index.html (copy of /saas-auralys/index.html). */
 window.NOVA_PROJECTS = {
   auralys: {
     id: 'auralys',
     name: 'Auralys',
     mark: 'A',
-    tagline: 'Réseau social musical',
+    tagline: 'Music social network',
     path: '/saas-auralys/',
     color: '#6d45d9',
     pages: ['overview', 'calendar', 'links', 'stats', 'accounting', 'legal'],
