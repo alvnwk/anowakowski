@@ -12,6 +12,7 @@
   const PAGES = {
     overview: { slug: 'overview', label: 'Overview', icon: 'grid', group: 'Workspace' },
     calendar: { slug: 'calendar', label: 'Calendar', icon: 'calendar', group: 'Workspace', kind: 'event' },
+    notes: { slug: 'notes', label: 'Notes', icon: 'note', group: 'Workspace', kind: 'note' },
     links: { slug: 'links', label: 'Useful links', icon: 'link', group: 'Workspace', kind: 'link' },
     directory: { slug: 'directory', label: 'Directory', icon: 'users', group: 'Workspace', kind: 'member' },
     stats: { slug: 'statistics', label: 'Statistics', icon: 'chart', group: 'Tracking', kind: 'stat' },
@@ -32,6 +33,7 @@
       escld: ['Membership fees', 'Grants', 'Donations', 'Partnerships', 'Events', 'Venue & logistics', 'Communication', 'Insurance', 'Bank fees', 'Other'],
     },
     link: ['Tools', 'Legal', 'Administration', 'Communication', 'Product', 'Finance'],
+    note: ['Meeting notes', 'Ideas', 'To-do', 'Contacts', 'Other'],
     council: ['Board', 'Law & Institutions', 'Diplomacy & International Relations', 'Europe & Fundamental Rights', 'Communication', 'Partnerships'],
     role: ['President', 'Vice-President', 'Secretary General', 'Treasurer', 'Council lead', 'Team lead', 'Member'],
   };
@@ -266,13 +268,14 @@
     const soon = up.find((e) => (N.parseDay(e.date) - N.parseDay(today())) / 86400000 <= 7);
     const metrics = metricsSummary().slice(0, 4);
     const docsKinds = ['legal', 'admin_doc'].filter((k) => P.pages.includes(k === 'legal' ? 'legal' : 'admin_docs'));
-    const recentRaw = S.items.filter((i) => ['link', 'stat', 'legal', 'admin_doc', 'member', 'entry'].includes(i.kind))
+    const recentRaw = S.items.filter((i) => ['note', 'link', 'stat', 'legal', 'admin_doc', 'member', 'entry'].includes(i.kind))
       .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 5);
-    const pageOf = { link: 'links', stat: 'stats', legal: 'legal', admin_doc: 'admin_docs', member: 'directory', entry: 'accounting' };
-    const kindLabel = { link: 'Link', stat: 'Statistic', legal: 'Legal', admin_doc: 'Administrative', member: 'Member', entry: 'Accounting' };
-    const titleOf = (i) => i.data.title || i.data.name || i.data.label || i.data.metric || '—';
+    const pageOf = { note: 'notes', link: 'links', stat: 'stats', legal: 'legal', admin_doc: 'admin_docs', member: 'directory', entry: 'accounting' };
+    const kindLabel = { note: 'Note', link: 'Link', stat: 'Statistic', legal: 'Legal', admin_doc: 'Administrative', member: 'Member', entry: 'Accounting' };
+    const titleOf = (i) => (i.kind === 'note' ? noteTitle(i.data) : i.data.title || i.data.name || i.data.label || i.data.metric || '—');
     const subOf = (i) => {
       const d = i.data;
+      if (i.kind === 'note') return d.category || noteExcerpt(d, 80);
       if (i.kind === 'stat') return `${fmtNum(d.value)} ${d.unit || ''} · ${fmtDate(d.date)}`;
       if (i.kind === 'entry') return `${d.type === 'in' ? '+' : '−'}${fmtMoney(d.amount)} · ${fmtDate(d.date)}`;
       if (i.kind === 'link') return N.domainOf(d.url);
@@ -356,6 +359,83 @@
         ${sparkline(m.list.map((x) => Number(x.value) || 0))}
         <span class="mcard-foot"><span>${esc(fmtDate(m.last.date))}</span><span>${plural(m.list.length, 'record')}</span></span>
       </button>`;
+  }
+
+  /* =================================================================== NOTES */
+  const noteTitle = (n) => (n.title || '').trim() || String(n.content || '').trim().split('\n')[0].slice(0, 80) || 'Untitled note';
+  function noteExcerpt(n, max) {
+    let text = String(n.content || '').trim();
+    if (!(n.title || '').trim()) text = text.split('\n').slice(1).join('\n').trim(); // first line is already the title
+    return max && text.length > max ? text.slice(0, max).trimEnd() + '…' : text;
+  }
+
+  function editNote(item) {
+    const fields = [
+      { name: 'title', label: 'Title', span: 2, placeholder: 'E.g. Board meeting — 12 December' },
+      { name: 'content', label: 'Note', type: 'textarea', required: true, span: 2, rows: 14, placeholder: 'Write here: ideas, meeting notes, to-do list…' },
+      { name: 'category', label: 'Label', list: catsFor('note', 'category', DEFAULTS.note), placeholder: 'E.g. Meeting notes, Ideas, To-do' },
+      { name: 'pinned', label: 'Pin to the top', type: 'checkbox', hint: 'Pinned notes stay above the others.' },
+    ];
+    return N.formModal({
+      title: item ? 'Edit note' : 'New note', kicker: P.name, fields, values: item, wide: true,
+      submit: item ? 'Save' : 'Add',
+      extra: item ? `<button type="button" class="btn btn-quiet-danger" data-del>${icon('trash')}Delete</button>` : '',
+      onOpen: (form, close) => { const d = form.querySelector('[data-del]'); if (d) d.addEventListener('click', () => close('delete')); },
+      onSubmit: async (v) => {
+        item ? await update(item.id, Object.assign(clean(item), v)) : await create('note', v);
+        return 'saved';
+      },
+    }).then((res) => {
+      if (res === 'delete') return askDelete(item.id, 'this note');
+      if (res === 'saved') { N.toast(item ? 'Note saved.' : 'Note added.'); afterChange(); }
+    });
+  }
+
+  function pageNotes(view) {
+    const ui = (S.ui.notes = S.ui.notes || { q: '', cat: '' });
+    const all = rows('note');
+    const cats = uniq(all.map((n) => n.category)).sort((a, b) => a.localeCompare(b, 'en'));
+    if (ui.cat && !cats.includes(ui.cat)) ui.cat = '';
+    view.innerHTML = `
+      ${head('Notes', `${plural(all.length, 'note')} · shared with the ${esc(P.name)} team`, addBtn('New note'))}
+      ${all.length ? `<div class="toolbar">${searchBox(ui.q, 'Search notes')}${cats.length ? chips(cats, ui.cat, 'cat') : ''}</div>` : ''}
+      <div data-results></div>`;
+    const card = (n) => `
+      <article class="ncard${n.pinned ? ' is-pinned' : ''}">
+        <button class="ncard-pin" type="button" data-act="pin" data-id="${n.id}" aria-pressed="${!!n.pinned}" title="${n.pinned ? 'Unpin' : 'Pin to the top'}" aria-label="${n.pinned ? 'Unpin' : 'Pin to the top'}">${icon('tack')}</button>
+        <button class="ncard-body" type="button" data-act="open" data-id="${n.id}">
+          <b>${esc(noteTitle(n))}</b>
+          ${noteExcerpt(n) ? `<p>${esc(noteExcerpt(n, 700))}</p>` : ''}
+        </button>
+        <footer class="ncard-foot">${n.category ? `<span class="badge">${esc(n.category)}</span>` : ''}<span class="grow"></span><span>${esc(N.ago(n._upd || n._at))}${n._by ? ' · ' + esc(by(n._by)) : ''}</span></footer>
+      </article>`;
+    const draw = () => {
+      const q = ui.q.toLowerCase();
+      const list = all.filter((n) => (!ui.cat || n.category === ui.cat) && matches(n, q, ['title', 'content', 'category']))
+        .sort((a, b) => String(b._upd || b._at).localeCompare(String(a._upd || a._at)));
+      const pinned = list.filter((n) => n.pinned), others = list.filter((n) => !n.pinned);
+      const box = view.querySelector('[data-results]');
+      if (!all.length) { box.innerHTML = `<div class="card">${empty('note', 'No notes yet', 'Write down ideas, meeting notes, to-do lists or anything the team should keep at hand. Notes are visible to everyone who has access to this workspace.', addBtn('Write the first note'))}</div>`; return; }
+      if (!list.length) { box.innerHTML = `<div class="card">${empty('search', 'No results', 'Try another keyword.')}</div>`; return; }
+      box.innerHTML = (pinned.length ? `<section class="group"><h2 class="group-title mono">Pinned <span>${pinned.length}</span></h2><div class="ngrid">${pinned.map(card).join('')}</div></section>` : '') +
+        (others.length ? `<section class="group">${pinned.length ? `<h2 class="group-title mono">Others <span>${others.length}</span></h2>` : ''}<div class="ngrid">${others.map(card).join('')}</div></section>` : '');
+    };
+    draw();
+    view.oninput = (e) => { if (e.target.matches('[data-search]')) { ui.q = e.target.value; draw(); } };
+    view.onclick = async (e) => {
+      const c = e.target.closest('[data-cat]');
+      if (c) { ui.cat = c.dataset.cat; view.querySelectorAll('[data-cat]').forEach((x) => x.setAttribute('aria-pressed', String(x === c))); draw(); return; }
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      const n = b.dataset.id ? rows('note').find((x) => x.id === b.dataset.id) : null;
+      if (b.dataset.act === 'add') editNote();
+      if (b.dataset.act === 'open' && n) editNote(n);
+      if (b.dataset.act === 'pin' && n) {
+        b.disabled = true;
+        try { await update(n.id, Object.assign(clean(n), { pinned: !n.pinned })); N.toast(n.pinned ? 'Note unpinned.' : 'Note pinned.'); afterChange(); }
+        catch (ex) { b.disabled = false; N.toast(N.humanError(ex), 'error'); }
+      }
+    };
   }
 
   /* ============================================================ USEFUL LINKS */
@@ -1001,6 +1081,7 @@
   const RENDER = {
     overview: pageOverview,
     calendar: pageCalendar,
+    notes: pageNotes,
     links: pageLinks,
     directory: pageDirectory,
     stats: pageStats,

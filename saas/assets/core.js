@@ -160,13 +160,13 @@
   };
 
   /* ====================================================== data: local demo */
-  const DEMO_KEY = 'nova-space-demo-v2';
+  const DEMO_KEY = 'nova-space-demo-v3';
   let demoMem = null;
   function demoState() {
     if (demoMem) return demoMem;
     try {
       const s = JSON.parse(localStorage.getItem(DEMO_KEY) || 'null');
-      if (s && s.v === 2) return (demoMem = s);
+      if (s && s.v === 3) return (demoMem = s);
     } catch (e) { /* storage unavailable */ }
     demoMem = demoSeed();
     demoSave();
@@ -327,8 +327,14 @@
     add('escld', 'entry', { type: 'out', label: 'Room hire', amount: 250, date: mon(0, 4), category: 'Venue & logistics', method: 'Bank transfer', notes: '' });
     add('escld', 'entry', { type: 'in', label: 'Membership fees — this month', amount: 140, date: mon(0, 10), category: 'Membership fees', method: 'Cash', notes: '' });
 
+    /* ---- notes */
+    add('auralys', 'note', { title: 'Ideas for the next release', category: 'Ideas', pinned: true, content: '- Weekly "taste match" with friends\n- Share a ranking as an Instagram story\n- Dark mode on the web version' });
+    add('auralys', 'note', { title: 'Product sync — key points', category: 'Meeting notes', pinned: false, content: 'Beta feedback is positive on reviews.\nRanking page feels slow on Android: to investigate.\nNext sync: same time next week.' });
+    add('escld', 'note', { title: 'To do before the general assembly', category: 'To-do', pinned: true, content: '- Book the room (done)\n- Send the invitation 15 days before\n- Prepare the financial report\n- Print the attendance sheet' });
+    add('escld', 'note', { title: 'Partnership contacts', category: 'Contacts', pinned: false, content: 'Faculty: international relations office\nBar association: student liaison\nMEP office: to contact in January' });
+
     return {
-      v: 2,
+      v: 3,
       session: null,
       files: {},
       items,
@@ -387,6 +393,8 @@
     refresh: '<path d="M19.5 11a7.5 7.5 0 0 0-13.6-4.2L4.5 8.5"/><path d="M4.5 4.5v4h4"/><path d="M4.5 13a7.5 7.5 0 0 0 13.6 4.2l1.4-1.7"/><path d="M19.5 19.5v-4h-4"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/>',
+    note: '<path d="M5 4.5h14a.5.5 0 0 1 .5.5v9.5l-5 5H5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5Z"/><path d="M14.5 19.5V15a.5.5 0 0 1 .5-.5h4.5M8 9h8M8 12.5h5"/>',
+    tack: '<path d="M9 3.5h6l-1 6 3.5 3.5v1.5h-11V13L10 9.5Z"/><path d="M12 14.5v6"/>',
     globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5Z"/>',
   };
   const icon = (name, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;

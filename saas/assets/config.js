@@ -27,7 +27,7 @@ window.NOVA_PROJECTS = {
     tagline: 'Music social network',
     path: '/saas-auralys/',
     color: '#6d45d9',
-    pages: ['overview', 'calendar', 'links', 'stats', 'accounting', 'legal'],
+    pages: ['overview', 'calendar', 'notes', 'links', 'stats', 'accounting', 'legal'],
   },
   escld: {
     id: 'escld',
@@ -36,6 +36,6 @@ window.NOVA_PROJECTS = {
     tagline: 'Law · Diplomacy · Europe',
     path: '/saas-escld/',
     color: '#1b2a45',
-    pages: ['overview', 'calendar', 'links', 'directory', 'stats', 'accounting', 'admin_docs', 'legal'],
+    pages: ['overview', 'calendar', 'notes', 'links', 'directory', 'stats', 'accounting', 'admin_docs', 'legal'],
   },
 };

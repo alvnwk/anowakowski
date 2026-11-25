@@ -431,6 +431,33 @@ body[data-project] .chip[aria-pressed="true"] { background: var(--accent); }
 .lcard:hover .lcard-main > .i, .lcard:focus-within .lcard-main > .i { opacity: 0; }
 @media (hover: none) { .lcard .row-actions { position: static; justify-self: end; opacity: 1; box-shadow: none; background: none; } }
 
+/* ------------------------------------------------------------------ notes */
+.ngrid { columns: 270px auto; column-gap: 14px; }
+.ncard {
+  position: relative; display: block; break-inside: avoid; margin-bottom: 14px; border-radius: var(--r-lg);
+  background: var(--surface); box-shadow: var(--sh-card); transition: transform 0.18s var(--ease), box-shadow 0.18s;
+}
+.ncard:hover { transform: translateY(-2px); }
+.ncard.is-pinned { background: color-mix(in srgb, var(--hl) 38%, var(--surface)); }
+.ncard-body { display: grid; gap: 8px; width: 100%; padding: 16px 46px 6px 16px; text-align: left; border-radius: inherit; }
+.ncard-body b { font-weight: 600; font-size: 14.5px; letter-spacing: -0.01em; line-height: 1.3; }
+.ncard-body p {
+  color: var(--ink-2); font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 12; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ncard-foot { display: flex; align-items: center; gap: 8px; padding: 6px 16px 14px; color: var(--mute); font-size: 11.5px; }
+.ncard-pin {
+  position: absolute; top: 10px; right: 10px; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px;
+  color: var(--mute); opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.ncard-pin .i { width: 16px; height: 16px; }
+.ncard:hover .ncard-pin, .ncard:focus-within .ncard-pin, .ncard-pin[aria-pressed="true"] { opacity: 1; }
+.ncard-pin:hover { background: var(--accent-soft); color: var(--ink); }
+.ncard-pin[aria-pressed="true"] { color: var(--accent); }
+.ncard-pin[aria-pressed="true"] .i { fill: currentColor; }
+@media (hover: none) { .ncard-pin { opacity: 1; } }
+dialog.modal textarea[name="content"] { min-height: 260px; font-size: 14px; line-height: 1.6; }
+
 /* --------------------------------------------------------- statistics */
 .mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-bottom: 18px; }
 .mcard {
