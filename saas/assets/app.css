@@ -750,3 +750,130 @@ tr.is-off td:not(:last-child) { opacity: 0.55; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ==========================================================================
+   NOVA SITE THEME
+   Black & white, Helvetica Neue, hairlines and pill buttons, like the
+   public site. Each workspace keeps its own colour as the accent.
+   Scoped with body:not(:has(.auth)) so the sign-in screen (.auth) keeps its original look.
+   ========================================================================== */
+body:not(:has(.auth)) {
+  --bg: #0e0e0e;
+  --glow-a: rgba(255, 255, 255, 0.045);
+  --glow-b: rgba(255, 255, 255, 0.02);
+  --surface: #141414;
+  --surface-2: rgba(255, 255, 255, 0.035);
+  --surface-solid: #141414;
+  --raised: #1b1b1b;
+  --ink: #f1f0ec;
+  --ink-2: #b4b3ae;
+  --mute: #7d7c78;
+  --faint: #4a4a47;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.15);
+  --accent: #f1f0ec;
+  --accent-ink: #0e0e0e;
+  --accent-soft: rgba(255, 255, 255, 0.06);
+  --hl: rgba(255, 255, 255, 0.12);
+  --hl-ink: #f1f0ec;
+  --ok: #7ad69a;
+  --ok-soft: rgba(122, 214, 154, 0.12);
+  --danger: #ff8474;
+  --danger-soft: rgba(255, 132, 116, 0.12);
+  --warn: #e7b85a;
+  --warn-soft: rgba(231, 184, 90, 0.12);
+  --sh-card: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  --sh-raised: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  --display: var(--sans);
+  --mono: var(--sans);
+  --r-xl: 20px;
+  --r-lg: 16px;
+  color-scheme: dark;
+}
+body[data-project="auralys"]:not(:has(.auth)) {
+  --accent: #a395f4; --accent-ink: #120b2b; --accent-soft: rgba(163, 149, 244, 0.12);
+  --hl: rgba(163, 149, 244, 0.16); --hl-ink: #d4ccff;
+  --glow-a: rgba(140, 110, 240, 0.16); --glow-b: rgba(108, 63, 207, 0.06);
+  --pbadge: radial-gradient(120% 90% at 15% 0%, #a395f4 0%, #8a6fe8 40%, #6c3fcf 100%);
+}
+body[data-project="escld"]:not(:has(.auth)) {
+  --accent: #c8a96b; --accent-ink: #131d33; --accent-soft: rgba(200, 169, 107, 0.12);
+  --hl: rgba(200, 169, 107, 0.16); --hl-ink: #e9d3a4;
+  --glow-a: rgba(42, 59, 94, 0.5); --glow-b: rgba(200, 169, 107, 0.05);
+  --pbadge: radial-gradient(90% 80% at 85% 20%, #2a3b5e 0%, #1a2742 55%, #131d33 100%);
+}
+
+/* type: one family, small spaced capitals, bold titles */
+body:not(:has(.auth)) .mono { font-family: var(--sans); font-size: 10.5px; font-weight: 500; letter-spacing: 0.2em; }
+body:not(:has(.auth)) .hello { font-weight: 700; letter-spacing: -0.05em; line-height: 0.95; }
+body:not(:has(.auth)) .page-title { font-weight: 700; letter-spacing: -0.04em; }
+body:not(:has(.auth)) .hero-big { font-weight: 500; letter-spacing: -0.05em; }
+body:not(:has(.auth)) .kpi-value, body:not(:has(.auth)) .mcard-val { font-weight: 500; letter-spacing: -0.03em; }
+body:not(:has(.auth)) .hero-lines dd, body:not(:has(.auth)) .table th, body:not(:has(.auth)) .cal-dow, body:not(:has(.auth)) .datebox span, body:not(:has(.auth)) .dots .d-lbl, body:not(:has(.auth)) .dots .d-now text, body:not(:has(.auth)) .log-time, body:not(:has(.auth)) .side-count, body:not(:has(.auth)) .chip em, body:not(:has(.auth)) .seg button em, body:not(:has(.auth)) .lcard-txt small, body:not(:has(.auth)) .src { font-family: var(--sans); }
+body:not(:has(.auth)) .table th, body:not(:has(.auth)) .cal-dow { font-weight: 500; letter-spacing: 0.18em; }
+
+/* surfaces */
+body:not(:has(.auth)) .card { background: var(--surface); box-shadow: var(--sh-card); -webkit-backdrop-filter: none; backdrop-filter: none; }
+body:not(:has(.auth)) .topbar { background: rgba(14, 14, 14, 0.78); border-bottom: 1px solid var(--line); }
+body:not(:has(.auth)) .menu { box-shadow: 0 0 0 1px var(--line-2), 0 24px 48px -16px rgba(0, 0, 0, 0.7); }
+body:not(:has(.auth)) .tb-proj:hover { background: rgba(255, 255, 255, 0.06); }
+body:not(:has(.auth)) .side-item:hover { background: rgba(255, 255, 255, 0.05); }
+body:not(:has(.auth)) .side-item.is-active { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+body:not(:has(.auth)) a.mini:hover { background: rgba(255, 255, 255, 0.06); }
+body:not(:has(.auth)) .table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+body:not(:has(.auth)) .badge--demo { background: transparent; color: var(--mute); box-shadow: 0 0 0 1px var(--line-2) inset; font-family: var(--sans); font-weight: 500; letter-spacing: 0.18em; }
+body:not(:has(.auth)) .pcard .role { color: var(--accent); }
+body:not(:has(.auth)) .ncard.is-pinned { background: color-mix(in srgb, var(--accent) 9%, #141414); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 32%, transparent) inset; }
+
+/* buttons: hairline pills that fill on hover, like the site */
+body:not(:has(.auth)) .btn { background: transparent; box-shadow: 0 0 0 1px var(--line-2) inset; transition: background 0.3s var(--ease), color 0.3s var(--ease), box-shadow 0.3s; }
+body:not(:has(.auth)) .btn:hover { transform: none; background: var(--ink); color: var(--bg); box-shadow: 0 0 0 1px var(--ink) inset; }
+body:not(:has(.auth)) .btn-primary { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
+body:not(:has(.auth)) .btn-primary:hover { background: var(--ink); color: var(--bg); }
+body:not(:has(.auth)) .btn-danger { background: var(--danger); color: #1a0703; box-shadow: none; }
+body:not(:has(.auth)) .btn-quiet, body:not(:has(.auth)) .btn-quiet-danger { box-shadow: none; }
+body:not(:has(.auth)) .btn-quiet:hover { background: var(--accent-soft); color: var(--ink); box-shadow: none; }
+body:not(:has(.auth)) .btn-quiet-danger:hover { background: var(--danger-soft); color: var(--danger); box-shadow: none; }
+body:not(:has(.auth)) .btn.is-loading::after { border-color: rgba(0, 0, 0, 0.25); border-top-color: var(--accent-ink); }
+body:not(:has(.auth)) .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+body:not(:has(.auth)) body[data-project] .chip[aria-pressed="true"], body[data-project]:not(:has(.auth)) .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+/* charts */
+body:not(:has(.auth)) .dots .d-now text { fill: var(--bg); }
+body:not(:has(.auth)) .spark circle { fill: #141414; }
+
+/* calendar */
+body:not(:has(.auth)) .cal-day:hover { background: rgba(255, 255, 255, 0.06); }
+body:not(:has(.auth)) .cal-day.is-weekend { background: rgba(255, 255, 255, 0.015); }
+body:not(:has(.auth)) .cal-ev { background: color-mix(in srgb, var(--c) 24%, #141414); color: color-mix(in srgb, var(--c) 45%, #ffffff); }
+body:not(:has(.auth)) .cal-ev:hover { background: color-mix(in srgb, var(--c) 36%, #141414); }
+
+/* forms and dialogs */
+body:not(:has(.auth)) dialog.modal::backdrop { background: rgba(0, 0, 0, 0.6); }
+body:not(:has(.auth)) .modal-box { background: #151515; box-shadow: 0 0 0 1px var(--line-2), 0 40px 90px -20px rgba(0, 0, 0, 0.8); }
+body:not(:has(.auth)) .field input, body:not(:has(.auth)) .field select, body:not(:has(.auth)) .field textarea { background: rgba(255, 255, 255, 0.04); color: var(--ink); box-shadow: 0 0 0 1px var(--line-2) inset; }
+body:not(:has(.auth)) .field select option { background: #151515; color: var(--ink); }
+body:not(:has(.auth)) .field input::placeholder, body:not(:has(.auth)) .field textarea::placeholder { color: var(--faint); }
+body:not(:has(.auth)) .check-box { background: transparent; }
+body:not(:has(.auth)) .check-box .i { color: var(--accent-ink); }
+body:not(:has(.auth)) .segctl input:checked + span { background: var(--raised); }
+body:not(:has(.auth)) .drop { background: rgba(255, 255, 255, 0.03); }
+body:not(:has(.auth)) .drop:hover, body:not(:has(.auth)) .drop.is-over { background: color-mix(in srgb, var(--accent) 7%, #141414); }
+body:not(:has(.auth)) .toast { background: var(--ink); color: var(--bg); }
+body:not(:has(.auth)) .toast .i { color: #23874b; }
+body:not(:has(.auth)) .toast--error .i { color: #cf4436; }
+
+/* hub: workspace cards in the same colours as the public site */
+body:not(:has(.auth)) .hello + .muted, body:not(:has(.auth)) .section-label { letter-spacing: 0.2em; }
+body:not(:has(.auth)) .proj-card { border-radius: 22px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset; }
+body:not(:has(.auth)) .proj-card:hover { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset; }
+body:not(:has(.auth)) .proj-card[data-p="auralys"]::before { background: radial-gradient(120% 90% at 15% 0%, #a395f4 0%, #8a6fe8 40%, #6c3fcf 100%); }
+body:not(:has(.auth)) .proj-card[data-p="escld"]::before { background: radial-gradient(90% 80% at 85% 20%, #2a3b5e 0%, #1a2742 55%, #131d33 100%); }
+body:not(:has(.auth)) .proj-card[data-p="escld"] h3 { font-family: var(--sans); }
+body:not(:has(.auth)) .proj-card h3 { font-weight: 700; letter-spacing: -0.045em; }
+body:not(:has(.auth)) .proj-badge { border-radius: 999px; }
+
+@media (max-width: 900px) {
+  body:not(:has(.auth)) .side { background: #121212; border-right: 1px solid var(--line); }
+  body.side-open:not(:has(.auth))::after { background: rgba(0, 0, 0, 0.55); }
+}
