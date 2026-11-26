@@ -40,119 +40,137 @@
   <div id="site" class="site">
     <a class="sr-only sr-focusable" href="#vision">Skip to content</a>
 
-    <header class="nav">
-      <a class="nav-brand" href="#top" aria-label="Nova Corporate — home">
-        <svg class="nav-mark" viewBox="-196 0 392 281" aria-hidden="true"><path d="M0 0 196 196 111 281 0 170-111 281-196 196Z"/></svg>
-        <span>Nova&nbsp;Corporate</span>
+    <header class="hd">
+      <a class="hd-brand" href="#top" aria-label="Nova Corporate — home">
+        <svg viewBox="-196 0 392 281" aria-hidden="true"><path d="M0 0 196 196 111 281 0 170-111 281-196 196Z"/></svg>
+        <span>Nova Corporate</span>
       </a>
-      <nav class="nav-links" aria-label="Main">
-        <a href="ventures.html" data-scramble>Ventures</a>
-        <a href="#approach" data-scramble>Approach</a>
-        <a href="#next" data-scramble>Next</a>
-        <a href="#contact" data-scramble>Contact</a>
+      <nav class="hd-nav" aria-label="Main">
+        <a href="ventures.html">Ventures</a>
+        <a href="#approach">Approach</a>
+        <a href="#contact">Contact</a>
       </nav>
-      <p class="nav-clock mono" aria-hidden="true"><span class="pulse"></span><span id="clock">--:--:--</span></p>
     </header>
 
     <main>
-      <!-- HERO -->
+      <!-- HERO: a lens follows the cursor and reads what Nova sees -->
       <section class="hero" id="top">
-        <div class="hero-grid" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-        <canvas class="hero-mark" id="mark" aria-hidden="true"></canvas>
-        <p class="hero-kicker mono reveal"><span>(00)</span> Holding company</p>
-        <h1 class="hero-title">
-          <span class="line"><span>Nova</span></span>
-          <span class="line"><span>Corporate</span></span>
-        </h1>
-        <div class="hero-foot">
-          <p class="hero-lede reveal">A holding company for independent ventures, built to see what comes next and to build it. – Shaping tomorrow's legacy.</p>
-          <dl class="hero-stats reveal">
-            <div><dt class="mono">Ventures</dt><dd><a class="u" href="ventures.html">02 →</a></dd></div>
-            <div><dt class="mono">Next</dt><dd>[...]</dd></div>
-          </dl>
-          <a class="hero-scroll mono reveal" href="#vision"><span>Scroll</span><i aria-hidden="true"></i></a>
+        <p class="eyebrow">Nova Corporate</p>
+        <div class="lens-stage" id="lens">
+          <h1 class="lens-text lens-base">
+            <span>Shaping</span><span>tomorrow's</span><span>legacy.</span>
+          </h1>
+          <p class="lens-text lens-reveal" aria-hidden="true">
+            <span>I can see</span><span>the</span><span>future.</span>
+          </p>
         </div>
+        <p class="hero-sub">A holding company for independent ventures, built to see what comes next and to build it.</p>
+        <div class="hero-foot">
+          <a class="scroll-cue eyebrow" href="#numbers"><i aria-hidden="true"></i>Scroll</a>
+          <p class="eyebrow">Music — Law — Diplomacy</p>
+        </div>
+      </section>
+
+      <!-- NUMBERS -->
+      <section class="stats" id="numbers" aria-label="Nova in numbers">
+        <div class="stat rv"><p class="stat-n" data-count="02">02</p><p>Ventures live</p></div>
+        <div class="stat rv"><p class="stat-n" data-count="01">01</p><p>In development</p></div>
+        <div class="stat rv"><p class="stat-n" data-count="03">03</p><p>Fields: music, law, diplomacy</p></div>
       </section>
 
       <!-- VISION -->
-      <section class="vision" id="vision">
-        <p class="label mono reveal"><span>(01)</span> Vision</p>
-        <p class="vision-text" data-words>We see the future. Then we build it, one venture at a time. Each with its own voice. All held by the same vision.</p>
-        <a class="btn reveal vision-cta" href="ventures.html"><span>See the ventures</span><b aria-hidden="true">→</b></a>
+      <section class="section" id="vision">
+        <div class="split">
+          <p class="eyebrow rv"><b>01</b>Vision</p>
+          <p class="vision-text" data-words>We see the future. Then we build it, one venture at a time. Each with its own voice. All held by the same vision.</p>
+        </div>
       </section>
 
-      <!-- MARQUEE -->
-      <div class="marquee" aria-hidden="true">
-        <div class="marquee-track">
-          <span>I</span><i></i><span>can</span><i></i><span>see</span><i></i><span>the</span><i></i><span>future</span><i></i><span>I</span><i></i><span>can</span><i></i><span>see</span><i></i><span>Nova</span><i></i>
+      <!-- VENTURES -->
+      <section id="ventures" aria-label="Ventures">
+        <header class="works-head">
+          <p class="eyebrow rv"><b>02</b>Ventures</p>
+          <h2 class="rv">Selected ventures</h2>
+        </header>
+
+        <div class="stack">
+          <a class="slide v-auralys" href="auralys.html" style="--i:0">
+            <span class="slide-meta l">01 — Music / Social</span>
+            <span class="slide-pill">Auralys <b>Discover</b></span>
+            <span class="slide-meta r">Open beta</span>
+            <span class="slide-shot"><img src="img/ventures/auralys-01.jpg" alt="Auralys website" loading="lazy"></span>
+            <span class="slide-name">Auralys</span>
+            <span class="slide-go">THE music social network →</span>
+          </a>
+          <a class="slide v-escld" href="escld.html" style="--i:1">
+            <span class="slide-meta l">02 — Law / Diplomacy / Europe</span>
+            <span class="slide-pill">ESCLD <b>Discover</b></span>
+            <span class="slide-meta r accent">Live</span>
+            <span class="slide-shot"><img src="img/ventures/escld-01.jpg" alt="ESCLD website" loading="lazy"></span>
+            <span class="slide-name">ESCLD</span>
+            <span class="slide-go accent">European Student Council for Law and Diplomacy →</span>
+          </a>
+          <div class="slide v-locked" style="--i:2" aria-label="Venture 03, in development">
+            <span class="slide-meta l">03 — Stealth</span>
+            <span class="slide-meta r">Incubating</span>
+            <span class="slide-center"><span class="eyebrow">In development. Revealed when it is ready.</span></span>
+            <span class="slide-name"><span class="redact" data-redact="CLASSIFIED">CLASSIFIED</span></span>
+            <span class="slide-go">Soon</span>
+          </div>
         </div>
-      </div>
+
+        <div class="works-more">
+          <a class="btn" href="ventures.html"><span>All ventures</span><b aria-hidden="true">→</b></a>
+          <a class="btn" href="#contact"><span>Your venture could be next</span><b aria-hidden="true">→</b></a>
+        </div>
+      </section>
 
       <!-- APPROACH -->
-      <section class="approach" id="approach">
-        <header class="section-head">
-          <p class="label mono reveal"><span>(02)</span> Approach</p>
-          <h2 class="h2"><span class="line"><span>See. Build. Hold.</span></span></h2>
-        </header>
-        <div class="steps">
-          <article class="step reveal">
-            <p class="step-n mono">01</p>
-            <h3>See</h3>
-            <p>We look for the signals before they become trends: in culture, in technology, in institutions.</p>
-          </article>
-          <article class="step reveal">
-            <p class="step-n mono">02</p>
-            <h3>Build</h3>
-            <p>Each venture launches with its own identity, its own community and the freedom to grow at its own pace.</p>
-          </article>
-          <article class="step reveal">
-            <p class="step-n mono">03</p>
-            <h3>Hold</h3>
-            <p>Nova provides the long-term frame: strategy, design, technology and governance, shared across every project.</p>
-          </article>
+      <section class="section" id="approach">
+        <p class="eyebrow rv"><b>03</b>Approach</p>
+        <div class="list">
+          <div class="row"><span class="row-n">01</span><span class="row-word">See</span><p class="row-text">We look for the signals before they become trends: in culture, in technology, in institutions.</p></div>
+          <div class="row"><span class="row-n">02</span><span class="row-word">Build</span><p class="row-text">Each venture launches with its own identity, its own community and the freedom to grow at its own pace.</p></div>
+          <div class="row"><span class="row-n">03</span><span class="row-word">Hold</span><p class="row-text">Nova provides the long-term frame: strategy, design, technology and governance, shared across every project.</p></div>
         </div>
       </section>
 
-      <!-- NEXT -->
-      <section class="next" id="next">
-        <p class="label mono reveal"><span>(03)</span> What’s next</p>
-        <h2 class="mega">
-          <span class="line"><span>The door</span></span>
-          <span class="line"><span>is open.</span></span>
-        </h2>
-        <div class="next-row">
-          <p class="next-text reveal">Nova is built to expand. New ventures, new fields, new partners. Nothing is ruled out.</p>
-          <a class="btn reveal" href="mailto:contact@novacorporate.eu"><span>Start a conversation</span><b aria-hidden="true">→</b></a>
-        </div>
+      <!-- CONTACT -->
+      <section class="contact" id="contact">
+        <p class="eyebrow rv"><b>04</b>What's next</p>
+        <h2 class="rv">The door<br>is open.</h2>
+        <p class="rv">Nova is built to expand. New ventures, new fields, new partners. Nothing is ruled out.</p>
+        <a class="mail rv" href="mailto:contact@novacorporate.eu">contact@novacorporate.eu</a>
       </section>
     </main>
 
-    <!-- FOOTER -->
-    <footer class="footer" id="contact">
-      <div class="footer-top">
-        <a class="footer-brand" href="#top" aria-label="Back to top">
+    <footer class="ft">
+      <div class="ft-top">
+        <div class="ft-brand">
           <svg viewBox="-196 0 392 281" aria-hidden="true"><path d="M0 0 196 196 111 281 0 170-111 281-196 196Z"/></svg>
-        </a>
-        <div class="footer-col">
-          <p class="mono">Ventures</p>
+          <p>Nova Corporate. A holding company for independent ventures.</p>
+        </div>
+        <div class="ft-col">
+          <p class="eyebrow">Ventures</p>
           <a href="auralys.html">Auralys</a>
           <a href="escld.html">ESCLD</a>
+          <a href="ventures.html">All ventures</a>
         </div>
-        <div class="footer-col">
-          <p class="mono">Company</p>
+        <div class="ft-col">
+          <p class="eyebrow">Company</p>
+          <a href="#vision">Vision</a>
           <a href="#approach">Approach</a>
-          <a href="#next">What’s next</a>
         </div>
-        <div class="footer-col">
-          <p class="mono">Contact</p>
+        <div class="ft-col">
+          <p class="eyebrow">Contact</p>
           <a href="mailto:contact@novacorporate.eu">contact@novacorporate.eu</a>
         </div>
       </div>
-      <p class="footer-word" aria-hidden="true">NOVA</p>
-      <div class="footer-bottom mono">
-        <span>© <span id="year">2026</span> Nova Corporate</span>
-        <a href="index.html" id="replay">Replay intro ↺</a>
-        <a href="#top">Back to top ↑</a>
+      <p class="ft-word" aria-hidden="true">NOVA</p>
+      <div class="ft-bottom">
+        <span>© <span class="year">2026</span> Nova Corporate</span>
+        <a href="index.html" class="replay">Replay intro</a>
+        <a href="#top">Back to top</a>
       </div>
     </footer>
   </div>
