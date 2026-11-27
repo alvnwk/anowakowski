@@ -112,6 +112,24 @@
     return sbClient;
   }
   const must = ({ data, error }) => { if (error) throw error; return data; };
+  const VOTER_COLS = 'id,poll_id,name,email,weight,voted,voted_at,created_at';
+
+  /* Personal voting links: 256-bit random token; only its SHA-256 is stored. */
+  function newToken() {
+    const b = new Uint8Array(32);
+    crypto.getRandomValues(b);
+    return btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  async function sha256hex(s) {
+    const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+    return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, '0')).join('');
+  }
+  function pollStatus(p) {
+    const now = Date.now();
+    if (p.closed_at || now >= new Date(p.ends_at).getTime()) return 'closed';
+    if (now < new Date(p.starts_at).getTime()) return 'scheduled';
+    return 'open';
+  }
 
   const live = {
     async session() { const c = await sb(); return must(await c.auth.getSession()).session; },
@@ -165,6 +183,35 @@
       return must(await q);
     },
     async logOpen(project, kind, target) { try { const c = await sb(); await c.rpc('log_open', { p_project: project, p_kind: kind, p_target: String(target || '').slice(0, 300) }); } catch (e) { /* the log is optional */ } },
+
+    /* Votes (saas-setup/votes.sql). Admins only, except ballot() and cast(). */
+    async listPolls() {
+      const c = await sb();
+      const polls = must(await c.from('polls').select('*').order('created_at', { ascending: false }));
+      let voters = [];
+      for (let from = 0; ; from += 1000) {
+        const rows = must(await c.from('poll_voters').select(VOTER_COLS).order('created_at', { ascending: true }).range(from, from + 999));
+        voters = voters.concat(rows);
+        if (rows.length < 1000) break;
+      }
+      return { polls, voters };
+    },
+    async createPoll(poll, voters) {
+      const c = await sb();
+      const p = must(await c.from('polls').insert(poll).select().single());
+      try {
+        const v = voters.length ? must(await c.from('poll_voters').insert(voters.map((x) => Object.assign({ poll_id: p.id }, x))).select(VOTER_COLS)) : [];
+        return { poll: p, voters: v };
+      } catch (e) { await c.from('polls').delete().eq('id', p.id); throw e; }
+    },
+    async updatePoll(id, patch) { const c = await sb(); return must(await c.from('polls').update(patch).eq('id', id).select().single()); },
+    async deletePoll(id) { const c = await sb(); must(await c.from('polls').delete().eq('id', id)); },
+    async addVoters(pollId, list) { const c = await sb(); return must(await c.from('poll_voters').insert(list.map((x) => Object.assign({ poll_id: pollId }, x))).select(VOTER_COLS)); },
+    async updateVoter(id, patch) { const c = await sb(); return must(await c.from('poll_voters').update(patch).eq('id', id).select(VOTER_COLS).single()); },
+    async removeVoter(id) { const c = await sb(); must(await c.from('poll_voters').delete().eq('id', id)); },
+    async listBallots(pollId) { const c = await sb(); return must(await c.from('poll_ballots').select('*').eq('poll_id', pollId)); },
+    async ballot(token) { const c = await sb(); return must(await c.rpc('vote_ballot', { p_token: token })); },
+    async cast(token, answers) { const c = await sb(); return must(await c.rpc('vote_cast', { p_token: token, p_answers: answers })); },
   };
 
   /* ====================================================== data: local demo */
@@ -180,6 +227,8 @@
     demoSave();
     return demoMem;
   }
+  /* Another tab changed the demo data: reload it on next use. */
+  window.addEventListener('storage', (e) => { if (e.key === DEMO_KEY) demoMem = null; });
   function demoSave() { try { localStorage.setItem(DEMO_KEY, JSON.stringify(demoMem)); } catch (e) { /* full or blocked: keep in memory */ } }
   const demoMember = (email) => demoState().members.find((m) => m.email === email) || null;
   const demoMe = () => { const s = demoState(); return s.session ? demoMember(s.session) : null; };
@@ -191,6 +240,30 @@
     const s = demoState();
     s.logs = s.logs || [];
     s.logs.push({ id: s.logs.length + 1, at: new Date().toISOString(), actor: s.session, action, project: project || null, kind: kind || null, target: target ? String(target).slice(0, 300) : null, details: details || {} });
+  }
+  const voterOut = (v) => { const o = Object.assign({}, v); delete o.token_hash; return o; };
+  /* Demo votes: one closed sample vote with results, added on first use. */
+  function demoPolls() {
+    const s = demoState();
+    if (s.polls) return s;
+    s.polls = []; s.poll_voters = []; s.poll_ballots = [];
+    const t = Date.now(), iso = (ms) => new Date(ms).toISOString();
+    const p = {
+      id: uid(), project: 'escld', title: 'Election of the Treasurer', anonymous: false, closed_at: null, created_by: 'admin@demo.local', created_at: iso(t - 9 * 864e5),
+      notice: 'A minimum of 3/5 of the votes cast is required to be elected in the first round.',
+      starts_at: iso(t - 9 * 864e5), ends_at: iso(t - 2 * 864e5),
+      questions: [{ id: 'q1', text: 'Who should be the next Treasurer?', max: 1, allow_blank: true, answers: [{ id: 'a1', text: 'Lucas Petit' }, { id: 'a2', text: 'Clara Moreau' }] }],
+    };
+    s.polls.push(p);
+    const names = ['Camille Laurent', 'Hugo Martin', 'Inès Bernard', 'Sofia Rossi', 'Jonas Weber', 'Léa Dubois', 'Mathis Leroy'];
+    const picks = [['a1'], ['a1'], ['a2'], ['a1'], [], ['a1'], null];
+    names.forEach((name, i) => {
+      const v = { id: uid(), poll_id: p.id, name, email: name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(' ', '.') + '@example.eu', weight: i === 0 ? 2 : 1, token_hash: uid(), voted: !!picks[i], voted_at: picks[i] ? iso(t - (8 - i) * 864e5) : null, created_at: p.created_at };
+      s.poll_voters.push(v);
+      if (picks[i]) s.poll_ballots.push({ id: uid(), poll_id: p.id, voter_id: v.id, weight: v.weight, answers: { q1: picks[i] }, cast_at: v.voted_at });
+    });
+    demoSave();
+    return s;
   }
   const itemLabel = (d) => d.title || d.name || d.label || d.metric || String(d.content || '').split('\n')[0] || '';
   const entryDetails = (kind, d) => (kind === 'entry' ? { amount: d.amount, type: d.type } : {});
@@ -299,6 +372,111 @@
       return clone(all.filter((l) => !before || l.at < before).slice(0, limit || 300));
     },
     async logOpen(project, kind, target) { if (demoCan(project)) { demoLog('open_file', project, kind, target); demoSave(); } },
+
+    /* Votes — same rules as votes.sql */
+    async listPolls() {
+      demoAdmin(); const s = demoPolls();
+      return clone({ polls: s.polls.slice().sort((a, b) => b.created_at.localeCompare(a.created_at)), voters: s.poll_voters.map(voterOut) });
+    },
+    async createPoll(poll, voters) {
+      demoAdmin(); const s = demoPolls();
+      if (new Date(poll.ends_at) <= new Date(poll.starts_at || Date.now())) throw new Error('The end must be after the start');
+      const now = new Date().toISOString();
+      const p = Object.assign({ id: uid(), project: 'escld', notice: '', anonymous: false, starts_at: now }, poll, { closed_at: null, created_by: s.session, created_at: now });
+      s.polls.push(p);
+      const vs = voters.map((x) => Object.assign({ id: uid(), poll_id: p.id, weight: 1, email: '' }, x, { voted: false, voted_at: null, created_at: now }));
+      s.poll_voters.push(...vs);
+      demoLog('create', p.project, 'poll', p.title); demoSave();
+      return clone({ poll: p, voters: vs.map(voterOut) });
+    },
+    async updatePoll(id, patch) {
+      demoAdmin(); const s = demoPolls();
+      const p = s.polls.find((x) => x.id === id); if (!p) deny();
+      const st = pollStatus(p);
+      if (st === 'closed' && Object.keys(patch).some((k) => !['title', 'notice'].includes(k))) throw new Error('This vote is closed and can no longer be changed');
+      if (st === 'open' && ['questions', 'anonymous', 'starts_at'].some((k) => k in patch)) throw new Error('Questions and settings cannot change once voting has started');
+      const next = Object.assign({}, p, patch);
+      if (patch.closed_at) next.closed_at = new Date().toISOString();
+      if (new Date(next.ends_at) <= new Date(next.starts_at)) throw new Error('The end must be after the start');
+      if (patch.closed_at && !p.closed_at) demoLog('poll_close', p.project, 'poll', p.title);
+      else if (patch.ends_at && patch.ends_at !== p.ends_at) demoLog('update', p.project, 'poll', p.title, { changed: ['end time'] });
+      Object.assign(p, next); demoSave();
+      return clone(p);
+    },
+    async deletePoll(id) {
+      demoAdmin(); const s = demoPolls();
+      const p = s.polls.find((x) => x.id === id);
+      s.polls = s.polls.filter((x) => x.id !== id);
+      s.poll_voters = s.poll_voters.filter((x) => x.poll_id !== id);
+      s.poll_ballots = s.poll_ballots.filter((x) => x.poll_id !== id);
+      if (p) demoLog('delete', p.project, 'poll', p.title);
+      demoSave();
+    },
+    async addVoters(pollId, list) {
+      demoAdmin(); const s = demoPolls();
+      const p = s.polls.find((x) => x.id === pollId); if (!p) deny();
+      if (pollStatus(p) === 'closed') throw new Error('This vote is closed');
+      const now = new Date().toISOString();
+      const vs = list.map((x) => Object.assign({ id: uid(), poll_id: pollId, weight: 1, email: '' }, x, { voted: false, voted_at: null, created_at: now }));
+      s.poll_voters.push(...vs); demoSave();
+      return clone(vs.map(voterOut));
+    },
+    async updateVoter(id, patch) {
+      demoAdmin(); const s = demoPolls();
+      const v = s.poll_voters.find((x) => x.id === id); if (!v) deny();
+      if ('voted' in patch || 'voted_at' in patch) throw new Error('The voting status only changes when a ballot is cast');
+      if (v.voted && ('token_hash' in patch || 'weight' in patch)) throw new Error('This person has already voted');
+      Object.assign(v, patch); demoSave();
+      return clone(voterOut(v));
+    },
+    async removeVoter(id) {
+      demoAdmin(); const s = demoPolls();
+      const v = s.poll_voters.find((x) => x.id === id);
+      if (v && v.voted) throw new Error('This person has already voted and cannot be removed');
+      s.poll_voters = s.poll_voters.filter((x) => x.id !== id); demoSave();
+    },
+    async listBallots(pollId) {
+      demoAdmin(); const s = demoPolls();
+      const p = s.polls.find((x) => x.id === pollId);
+      return p && pollStatus(p) === 'closed' ? clone(s.poll_ballots.filter((b) => b.poll_id === pollId)) : [];
+    },
+    async ballot(token) {
+      await sleep(200); const s = demoPolls();
+      if (!token || token.length < 30) return { error: 'invalid_link' };
+      const h = await sha256hex(token);
+      const v = s.poll_voters.find((x) => x.token_hash === h);
+      if (!v) return { error: 'invalid_link' };
+      const p = s.polls.find((x) => x.id === v.poll_id);
+      const mine = v.voted && !p.anonymous ? s.poll_ballots.find((b) => b.voter_id === v.id) : null;
+      return clone({
+        poll: { title: p.title, notice: p.notice, anonymous: p.anonymous, questions: p.questions, starts_at: p.starts_at, ends_at: p.closed_at || p.ends_at, status: pollStatus(p) },
+        voter: { name: v.name, weight: v.weight, voted: v.voted, voted_at: v.voted_at },
+        my_answers: mine ? mine.answers : null,
+      });
+    },
+    async cast(token, answers) {
+      await sleep(300); const s = demoPolls();
+      const h = await sha256hex(token || '');
+      const v = s.poll_voters.find((x) => x.token_hash === h);
+      if (!v) throw new Error('invalid_link');
+      if (v.voted) throw new Error('already_voted');
+      const p = s.polls.find((x) => x.id === v.poll_id);
+      const st = pollStatus(p);
+      if (st === 'closed') throw new Error('vote_closed');
+      if (st === 'scheduled') throw new Error('vote_not_open');
+      const out = {};
+      p.questions.forEach((q) => {
+        const ids = [...new Set((answers && answers[q.id]) || [])];
+        if (!ids.every((id) => q.answers.some((a) => a.id === id))) throw new Error('invalid_answers');
+        if (ids.length > Math.max(1, q.max || 1)) throw new Error('too_many_answers');
+        if (!ids.length && q.allow_blank === false) throw new Error('answer_required');
+        out[q.id] = ids;
+      });
+      s.poll_ballots.push({ id: uid(), poll_id: p.id, voter_id: p.anonymous ? null : v.id, weight: v.weight, answers: out, cast_at: p.anonymous ? null : new Date().toISOString() });
+      v.voted = true; v.voted_at = p.anonymous ? null : new Date().toISOString();
+      demoSave();
+      return { ok: true };
+    },
   };
 
   /* Sample data, for the local demo only. */
@@ -445,6 +623,7 @@
     refresh: '<path d="M19.5 11a7.5 7.5 0 0 0-13.6-4.2L4.5 8.5"/><path d="M4.5 4.5v4h4"/><path d="M4.5 13a7.5 7.5 0 0 0 13.6 4.2l1.4-1.7"/><path d="M19.5 19.5v-4h-4"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/>',
+    vote: '<path d="M4 13.5h16v6.5H4Z"/><path d="M7.5 13.5V4.5h9v9"/><path d="m10 9 1.6 1.6L14.5 7.5"/>',
     note: '<path d="M5 4.5h14a.5.5 0 0 1 .5.5v9.5l-5 5H5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5Z"/><path d="M14.5 19.5V15a.5.5 0 0 1 .5-.5h4.5M8 9h8M8 12.5h5"/>',
     tack: '<path d="M9 3.5h6l-1 6 3.5 3.5v1.5h-11V13L10 9.5Z"/><path d="M12 14.5v6"/>',
     globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5Z"/>',
@@ -780,7 +959,7 @@
   }
 
   window.Nova = {
-    CFG, PROJECTS, PROJECT_IDS, MODE, LOCALE, api, MARK,
+    CFG, PROJECTS, PROJECT_IDS, MODE, LOCALE, api, MARK, newToken, sha256hex, pollStatus,
     uid, esc, cap, safeUrl, domainOf, isoDay, parseDay, fmtDate, fmtLong, fmtMoney, fmtMoney0, fmtNum, fmtSize, ago, initials, firstName, canAccess, humanError,
     icon, fieldHtml, readForm, modal, formModal, confirm: confirmBox, toast, openFile, openLink, csv, download,
     topbar, bindTopbar, changePassword, boot, renderOff, renderBlocked, renderError, screen,

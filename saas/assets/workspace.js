@@ -21,6 +21,10 @@
     legal: { slug: 'legal', label: 'Legal documents', short: 'Legal', icon: 'scale', group: 'Documents', kind: 'legal' },
   };
 
+  /* Extra pages registered by other scripts (e.g. votes-admin.js for ESCLD). */
+  const EXTRA = window.NovaExtraPages || {};
+  Object.keys(EXTRA).forEach((k) => { PAGES[k] = EXTRA[k].meta; });
+
   /* Suggested categories (any other value can be typed). */
   const DEFAULTS = {
     legal: {
@@ -112,7 +116,7 @@
 
   function renderShell() {
     const groups = [];
-    P.pages.forEach((k) => { const g = PAGES[k].group; let grp = groups.find((x) => x.name === g); if (!grp) groups.push((grp = { name: g, pages: [] })); grp.pages.push(k); });
+    visiblePages().forEach((k) => { const g = PAGES[k].group; let grp = groups.find((x) => x.name === g); if (!grp) groups.push((grp = { name: g, pages: [] })); grp.pages.push(k); });
     const app = document.getElementById('app');
     app.innerHTML = `
       ${N.topbar({ me: S.me, current: PID, menuButton: true })}
@@ -141,10 +145,14 @@
     });
   }
 
+  /* Pages this person may see (admin-only pages are hidden from members). */
+  const visiblePages = () => P.pages.filter((k) => PAGES[k] && (!PAGES[k].admin || (S.me && S.me.is_admin)));
+
   function route() {
-    const slug = decodeURIComponent(location.hash.replace(/^#/, '')) || 'overview';
-    const key = P.pages.find((k) => PAGES[k].slug === slug) || 'overview';
+    const [slug, ...rest] = (decodeURIComponent(location.hash.replace(/^#/, '')) || 'overview').split('/');
+    const key = visiblePages().find((k) => PAGES[k].slug === slug) || 'overview';
     S.page = key;
+    S.sub = key === 'overview' ? '' : rest.join('/');
     document.querySelectorAll('.side-item[data-page]').forEach((a) => {
       const on = a.dataset.page === key;
       a.classList.toggle('is-active', on);
@@ -153,7 +161,8 @@
     document.title = `${PAGES[key].label} · ${P.name}`;
     const view = document.getElementById('view');
     view.onclick = null; view.oninput = null; view.onchange = null;
-    RENDER[key](view);
+    if (RENDER[key]) RENDER[key](view);
+    else EXTRA[key].render(view, CTX);
   }
 
   /* ============================================================= templates */
@@ -1077,6 +1086,13 @@
       ]), 'text/csv;charset=utf-8');
     };
   }
+
+  /* What extra pages can use. */
+  const CTX = {
+    N, P, PID, S, PAGES, head, empty, addBtn, actions, searchBox, chips, plural, relDay, rows, route, today, esc, icon,
+    sub: () => S.sub,
+    go: (path) => { const h = '#' + path; if (location.hash === h) route(); else location.hash = h; },
+  };
 
   const RENDER = {
     overview: pageOverview,

@@ -36,6 +36,6 @@ window.NOVA_PROJECTS = {
     tagline: 'Law · Diplomacy · Europe',
     path: '/saas-escld/',
     color: '#1b2a45',
-    pages: ['overview', 'calendar', 'notes', 'links', 'directory', 'stats', 'accounting', 'admin_docs', 'legal'],
+    pages: ['overview', 'calendar', 'notes', 'links', 'directory', 'votes', 'stats', 'accounting', 'admin_docs', 'legal'],
   },
 };

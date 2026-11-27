@@ -13,7 +13,7 @@
 
   const KIND = {
     note: 'the note', event: 'the event', link: 'the link', stat: 'the statistic', entry: 'the transaction',
-    legal: 'the legal document', admin_doc: 'the administrative document', member: 'the directory entry',
+    legal: 'the legal document', admin_doc: 'the administrative document', member: 'the directory entry', poll: 'the vote',
   };
   const FIELD = {
     title: 'title', content: 'text', category: 'category', pinned: 'pin', date: 'date', end_date: 'end date', start: 'start time', end: 'end time',
@@ -29,6 +29,7 @@
     { value: 'update', label: 'Edited' },
     { value: 'delete', label: 'Deleted' },
     { value: 'open_file', label: 'Documents opened' },
+    { value: 'poll_close', label: 'Votes closed early' },
     { value: 'access', label: 'Access changes' },
   ];
 
@@ -49,6 +50,7 @@
       case 'update': return { ic: 'edit', html: `${who} edited ${what}`, extra: [d.changed && d.changed.length ? 'Changed: ' + d.changed.map((k) => FIELD[k] || k).join(', ') : '', money].filter(Boolean).join(' · ') };
       case 'delete': return { ic: 'trash', tone: 'danger', html: `${who} deleted ${what}`, extra: money };
       case 'open_file': return { ic: 'eye', html: `${who} opened ${what}` };
+      case 'poll_close': return { ic: 'lock', html: `${who} closed ${what} before its planned end` };
       case 'access_add': return {
         ic: 'user-plus', html: `${who} granted access to <b>${esc(personOf(l))}</b>`,
         extra: [d.projects && d.projects.length ? 'Workspaces: ' + list(d.projects) : '', d.is_admin ? 'administrator' : ''].filter(Boolean).join(' · '),
