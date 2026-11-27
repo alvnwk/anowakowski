@@ -14,6 +14,17 @@
   const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js';
   const LOCALE = 'en-GB';
 
+  /* Light / dark mode: remembered per browser, dark by default (like the site). */
+  const THEME_KEY = 'nova-theme';
+  function getTheme() { try { return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; } catch (e) { return 'dark'; } }
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    document.documentElement.style.colorScheme = t;
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = t === 'light' ? '#e9e9e6' : '#0e0e0e';
+  }
+  applyTheme(getTheme());
+
   /* ---------------------------------------------------------------- helpers */
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2));
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -626,6 +637,8 @@
     vote: '<path d="M4 13.5h16v6.5H4Z"/><path d="M7.5 13.5V4.5h9v9"/><path d="m10 9 1.6 1.6L14.5 7.5"/>',
     note: '<path d="M5 4.5h14a.5.5 0 0 1 .5.5v9.5l-5 5H5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5Z"/><path d="M14.5 19.5V15a.5.5 0 0 1 .5-.5h4.5M8 9h8M8 12.5h5"/>',
     tack: '<path d="M9 3.5h6l-1 6 3.5 3.5v1.5h-11V13L10 9.5Z"/><path d="M12 14.5v6"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
+    moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/>',
     globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5Z"/>',
   };
   const icon = (name, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -838,6 +851,21 @@
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   }
 
+  /* ======================================================= light / dark */
+  const themeLabel = () => (getTheme() === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
+  const themeButton = () => `<button class="icon-btn tb-theme" type="button" data-action="theme" aria-label="${themeLabel()}" title="${themeLabel()}">${icon(getTheme() === 'light' ? 'moon' : 'sun')}</button>`;
+  function refreshThemeButtons() {
+    document.querySelectorAll('[data-action="theme"]').forEach((b) => { b.innerHTML = icon(getTheme() === 'light' ? 'moon' : 'sun'); b.title = themeLabel(); b.setAttribute('aria-label', themeLabel()); });
+  }
+  function toggleTheme() {
+    const t = getTheme() === 'light' ? 'dark' : 'light';
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) { /* not remembered */ }
+    applyTheme(t);
+    refreshThemeButtons();
+  }
+  document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('[data-action="theme"]')) toggleTheme(); });
+  window.addEventListener('storage', (e) => { if (e.key === THEME_KEY) { applyTheme(getTheme()); refreshThemeButtons(); } });
+
   /* ================================================================ top bar */
   function topbar(o) {
     const me = o.me;
@@ -853,6 +881,7 @@
         ${tabs}
         <span class="grow"></span>
         ${MODE === 'demo' ? '<span class="badge badge--demo" title="Sample data stored in this browser only">Local demo</span>' : ''}
+        ${themeButton()}
         <div class="tb-user">
           <button class="tb-user-btn" type="button" aria-haspopup="true" aria-expanded="false">
             <span class="avatar">${esc(initials(me.full_name, me.email))}</span>
@@ -962,6 +991,6 @@
     CFG, PROJECTS, PROJECT_IDS, MODE, LOCALE, api, MARK, newToken, sha256hex, pollStatus,
     uid, esc, cap, safeUrl, domainOf, isoDay, parseDay, fmtDate, fmtLong, fmtMoney, fmtMoney0, fmtNum, fmtSize, ago, initials, firstName, canAccess, humanError,
     icon, fieldHtml, readForm, modal, formModal, confirm: confirmBox, toast, openFile, openLink, csv, download,
-    topbar, bindTopbar, changePassword, boot, renderOff, renderBlocked, renderError, screen,
+    themeButton, toggleTheme, topbar, bindTopbar, changePassword, boot, renderOff, renderBlocked, renderError, screen,
   };
 })();

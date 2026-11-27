@@ -36,7 +36,7 @@
   function shell(inner) {
     app.innerHTML = `
       <div class="ballot">
-        <header class="ballot-head"><span class="pbadge">E.</span><span><b>ESCLD</b><small class="mono">Secure online vote</small></span></header>
+        <header class="ballot-head"><span class="pbadge">E.</span><span><b>ESCLD</b><small class="mono">Secure online vote</small></span><span class="grow"></span>${N.themeButton()}</header>
         ${inner}
         <footer class="ballot-foot">${icon('lock')}<span>This link is personal and secure. Please do not forward it: it can be used only once.</span></footer>
       </div>`;
